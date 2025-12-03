@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model achievements {
+  id                      Int                       @id @default(autoincrement())
+  game_id                 Int
+  title                   String                    @db.VarChar(64)
+  icon                    String                    @db.VarChar(2083)
+  games                   games                     @relation(fields: [game_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user_achieve_connection user_achieve_connection[]
+}
+
+model devs {
+  id                  Int                   @id @default(autoincrement())
+  dev_name            String                @unique @db.VarChar(50)
+  contacts            Json                  @db.Json
+  logo                String?               @db.VarChar(2083)
+  dev_type            dev_type
+  game_dev_connection game_dev_connection[]
+}
+
+model events {
+  id         Int      @id @default(autoincrement())
+  game_id    Int
+  discount   Decimal? @db.Decimal(5, 2)
+  start_date DateTime @db.Date
+  end_date   DateTime @db.Date
+  type       ev_type
+  games      games    @relation(fields: [game_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model friends {
+  user_id                        Int
+  friend_id                      Int
+  status                         fr_status @default(pending)
+  users_friends_friend_idTousers users     @relation("friends_friend_idTousers", fields: [friend_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_friends_user_idTousers   users     @relation("friends_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, friend_id])
+}
+
+model game_dev_connection {
+  game_id Int
+  dev_id  Int
+  devs    devs  @relation(fields: [dev_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  games   games @relation(fields: [game_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([game_id, dev_id])
+}
+
+model game_news {
+  id           Int      @id @default(autoincrement())
+  game_id      Int
+  title        String   @db.VarChar(200)
+  content      String
+  published_at DateTime @default(now()) @db.Timestamp(6)
+  games        games    @relation(fields: [game_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model game_tag_connection {
+  game_id Int
+  tag_id  Int
+  games   games @relation(fields: [game_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags    tags  @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([game_id, tag_id])
+}
+
+model games {
+  id                  Int                   @id @default(autoincrement())
+  title               String                @unique @db.VarChar(50)
+  price               Decimal?              @db.Decimal(6, 2)
+  release_date        DateTime              @db.Date
+  age_rating          String                @db.VarChar(3)
+  cover               String                @db.VarChar(2083)
+  description         String?
+  system_requirements Json                  @db.Json
+  base_game_id        Int?
+  is_multiplayer      Boolean               @default(false)
+  achievements        achievements[]
+  events              events[]
+  game_dev_connection game_dev_connection[]
+  game_news           game_news[]
+  game_tag_connection game_tag_connection[]
+  games               games?                @relation("gamesTogames", fields: [base_game_id], references: [id], onUpdate: NoAction)
+  other_games         games[]               @relation("gamesTogames")
+  libraries           libraries[]
+  reviews             reviews[]
+  saves               saves[]
+}
+
+model libraries {
+  id              Int            @id @default(autoincrement())
+  user_id         Int
+  game_id         Int
+  hours_played    Int            @default(0)
+  ownership       own_type
+  download_status download_type?
+  games           games          @relation(fields: [game_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users           users          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, game_id])
+}
+
+model reviews {
+  id      Int     @id @default(autoincrement())
+  user_id Int
+  game_id Int
+  rating  Int
+  content String?
+  games   games   @relation(fields: [game_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users   users   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, game_id])
+}
+
+model saves {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  game_id      Int
+  save_data    Json     @db.Json
+  last_updated DateTime @default(now()) @db.Timestamp(6)
+  games        games    @relation(fields: [game_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users        users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, game_id])
+}
+
+model tags {
+  id                  Int                   @id @default(autoincrement())
+  tag_name            String                @unique @db.VarChar(25)
+  game_tag_connection game_tag_connection[]
+}
+
+model user_achieve_connection {
+  user_id        Int
+  achievement_id Int
+  achievements   achievements @relation(fields: [achievement_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, achievement_id])
+}
+
+model users {
+  id                               Int                       @id @default(autoincrement())
+  username                         String                    @unique @db.VarChar(20)
+  email                            String                    @unique @db.VarChar(255)
+  password_hash                    String                    @db.VarChar(255)
+  age                              Int
+  region                           String                    @db.Char(2)
+  avatar                           String?                   @db.VarChar(2083)
+  created_at                       DateTime?                 @default(now()) @db.Timestamp(6)
+  last_login                       DateTime?                 @db.Timestamp(6)
+  friends_friends_friend_idTousers friends[]                 @relation("friends_friend_idTousers")
+  friends_friends_user_idTousers   friends[]                 @relation("friends_user_idTousers")
+  libraries                        libraries[]
+  reviews                          reviews[]
+  saves                            saves[]
+  user_achieve_connection          user_achieve_connection[]
+}
+
+enum dev_type {
+  developer
+  publisher
+  both
+}
+
+enum download_type {
+  installed
+  not_installed
+  in_progress
+}
+
+enum ev_type {
+  sale
+  giveaway
+  free_weekend @map("free weekend")
+}
+
+enum fr_status {
+  pending
+  accepted
+  blocked
+}
+
+enum own_type {
+  rented
+  wishlist
+  purchased
+}
