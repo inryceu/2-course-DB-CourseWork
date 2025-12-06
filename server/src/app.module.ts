@@ -7,10 +7,11 @@ import { LibraryModule } from './modules/library/library.module';
 import { ReviewModule } from './modules/review/review.module';
 import { TagModule } from './modules/tag/tag.module';
 import { DevModule } from './modules/dev/dev.module';
+import { AchievementModule } from './modules/achievement/achievement.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule],
+  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule, AchievementModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
