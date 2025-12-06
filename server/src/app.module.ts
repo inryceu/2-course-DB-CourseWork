@@ -5,10 +5,11 @@ import { UserModule } from './modules/user/user.module';
 import { GameModule } from './modules/game/game.module';
 import { LibraryModule } from './modules/library/library.module';
 import { ReviewModule } from './modules/review/review.module';
+import { TagModule } from './modules/tag/tag.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [UserModule, GameModule, LibraryModule, ReviewModule],
+  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
