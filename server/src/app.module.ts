@@ -9,10 +9,11 @@ import { TagModule } from './modules/tag/tag.module';
 import { DevModule } from './modules/dev/dev.module';
 import { AchievementModule } from './modules/achievement/achievement.module';
 import { EventModule } from './modules/event/event.module';
+import { SaveModule } from './modules/save/save.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule, AchievementModule, EventModule],
+  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule, AchievementModule, EventModule, SaveModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
