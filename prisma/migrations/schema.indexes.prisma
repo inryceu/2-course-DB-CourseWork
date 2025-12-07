@@ -1,0 +1,68 @@
+model achievements {
+  @@index([game_id])
+}
+
+model devs {
+  @@index([dev_type])
+}
+
+model events {
+  @@index([game_id])
+  @@index([start_date, end_date])
+  @@index([type])
+}
+
+model friends {
+  @@index([user_id])
+  @@index([friend_id])
+  @@index([status])
+}
+
+model game_dev_connection {
+  @@index([dev_id])
+}
+
+model game_news {
+  @@index([game_id])
+  @@index([published_at])
+}
+
+model game_tag_connection {
+  @@index([tag_id])
+}
+
+model games {
+  @@index([release_date])
+  @@index([base_game_id])
+  @@index([is_multiplayer])
+}
+
+model libraries {
+  @@index([user_id])
+  @@index([game_id])
+  @@index([ownership])
+  @@index([user_id, ownership])
+}
+
+model reviews {
+  @@index([user_id])
+  @@index([game_id])
+  @@index([rating])
+  @@index([game_id, rating])
+}
+
+model saves {
+  @@index([user_id])
+  @@index([game_id])
+  @@index([last_updated])
+}
+
+model user_achieve_connection {
+  @@index([achievement_id])
+}
+
+model users {
+  @@index([region])
+  @@index([created_at])
+  @@index([last_login])
+}
