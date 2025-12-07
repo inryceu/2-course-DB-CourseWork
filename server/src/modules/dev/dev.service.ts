@@ -12,26 +12,28 @@ export class DevService {
   constructor(private prisma: PrismaService) {}
 
   async create(createDevDto: CreateDevDto) {
-    const existingDev = await this.prisma.devs.findUnique({
-      where: { dev_name: createDevDto.dev_name },
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingDev = await tx.devs.findUnique({
+        where: { dev_name: createDevDto.dev_name },
+      });
+
+      if (existingDev) {
+        throw new ConflictException(
+          'Developer/Publisher with this name already exists',
+        );
+      }
+
+      const dev = await tx.devs.create({
+        data: {
+          dev_name: createDevDto.dev_name,
+          contacts: createDevDto.contacts,
+          logo: createDevDto.logo,
+          dev_type: createDevDto.dev_type,
+        },
+      });
+
+      return dev;
     });
-
-    if (existingDev) {
-      throw new ConflictException(
-        'Developer/Publisher with this name already exists',
-      );
-    }
-
-    const dev = await this.prisma.devs.create({
-      data: {
-        dev_name: createDevDto.dev_name,
-        contacts: createDevDto.contacts,
-        logo: createDevDto.logo,
-        dev_type: createDevDto.dev_type,
-      },
-    });
-
-    return dev;
   }
 
   async findAll(skip?: number, take?: number) {
@@ -73,59 +75,63 @@ export class DevService {
   }
 
   async update(id: number, updateDevDto: UpdateDevDto) {
-    const existingDev = await this.prisma.devs.findUnique({
-      where: { id },
-    });
-
-    if (!existingDev) {
-      throw new NotFoundException(
-        `Developer/Publisher with ID ${id} not found`,
-      );
-    }
-
-    if (updateDevDto.dev_name) {
-      const conflictDev = await this.prisma.devs.findFirst({
-        where: {
-          AND: [{ id: { not: id } }, { dev_name: updateDevDto.dev_name }],
-        },
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingDev = await tx.devs.findUnique({
+        where: { id },
       });
 
-      if (conflictDev) {
-        throw new ConflictException('Developer/Publisher name already taken');
+      if (!existingDev) {
+        throw new NotFoundException(
+          `Developer/Publisher with ID ${id} not found`,
+        );
       }
-    }
 
-    const updateData: any = {};
+      if (updateDevDto.dev_name) {
+        const conflictDev = await tx.devs.findFirst({
+          where: {
+            AND: [{ id: { not: id } }, { dev_name: updateDevDto.dev_name }],
+          },
+        });
 
-    if (updateDevDto.dev_name) updateData.dev_name = updateDevDto.dev_name;
-    if (updateDevDto.contacts) updateData.contacts = updateDevDto.contacts;
-    if (updateDevDto.logo !== undefined) updateData.logo = updateDevDto.logo;
-    if (updateDevDto.dev_type) updateData.dev_type = updateDevDto.dev_type;
+        if (conflictDev) {
+          throw new ConflictException('Developer/Publisher name already taken');
+        }
+      }
 
-    const dev = await this.prisma.devs.update({
-      where: { id },
-      data: updateData,
+      const updateData: any = {};
+
+      if (updateDevDto.dev_name) updateData.dev_name = updateDevDto.dev_name;
+      if (updateDevDto.contacts) updateData.contacts = updateDevDto.contacts;
+      if (updateDevDto.logo !== undefined) updateData.logo = updateDevDto.logo;
+      if (updateDevDto.dev_type) updateData.dev_type = updateDevDto.dev_type;
+
+      const dev = await tx.devs.update({
+        where: { id },
+        data: updateData,
+      });
+
+      return dev;
     });
-
-    return dev;
   }
 
   async remove(id: number) {
-    const dev = await this.prisma.devs.findUnique({
-      where: { id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const dev = await tx.devs.findUnique({
+        where: { id },
+      });
+
+      if (!dev) {
+        throw new NotFoundException(
+          `Developer/Publisher with ID ${id} not found`,
+        );
+      }
+
+      await tx.devs.delete({
+        where: { id },
+      });
+
+      return { message: `Developer/Publisher with ID ${id} has been deleted` };
     });
-
-    if (!dev) {
-      throw new NotFoundException(
-        `Developer/Publisher with ID ${id} not found`,
-      );
-    }
-
-    await this.prisma.devs.delete({
-      where: { id },
-    });
-
-    return { message: `Developer/Publisher with ID ${id} has been deleted` };
   }
 
   async getDeveloperGames(devId: number, skip?: number, take?: number) {

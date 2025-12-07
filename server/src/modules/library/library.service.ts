@@ -13,69 +13,71 @@ export class LibraryService {
   constructor(private prisma: PrismaService) {}
 
   async create(createLibraryDto: CreateLibraryDto) {
-    const existingLibrary = await this.prisma.libraries.findUnique({
-      where: {
-        user_id_game_id: {
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingLibrary = await tx.libraries.findUnique({
+        where: {
+          user_id_game_id: {
+            user_id: createLibraryDto.user_id,
+            game_id: createLibraryDto.game_id,
+          },
+        },
+      });
+
+      if (existingLibrary) {
+        throw new ConflictException(
+          'Library entry for this user and game already exists',
+        );
+      }
+
+      const user = await tx.users.findUnique({
+        where: { id: createLibraryDto.user_id },
+      });
+
+      if (!user) {
+        throw new NotFoundException(
+          `User with ID ${createLibraryDto.user_id} not found`,
+        );
+      }
+
+      const game = await tx.games.findUnique({
+        where: { id: createLibraryDto.game_id },
+      });
+
+      if (!game) {
+        throw new NotFoundException(
+          `Game with ID ${createLibraryDto.game_id} not found`,
+        );
+      }
+
+      const library = await tx.libraries.create({
+        data: {
           user_id: createLibraryDto.user_id,
           game_id: createLibraryDto.game_id,
+          hours_played: createLibraryDto.hours_played ?? 0,
+          ownership: createLibraryDto.ownership,
+          download_status: createLibraryDto.download_status,
         },
-      },
-    });
-
-    if (existingLibrary) {
-      throw new ConflictException(
-        'Library entry for this user and game already exists',
-      );
-    }
-
-    const user = await this.prisma.users.findUnique({
-      where: { id: createLibraryDto.user_id },
-    });
-
-    if (!user) {
-      throw new NotFoundException(
-        `User with ID ${createLibraryDto.user_id} not found`,
-      );
-    }
-
-    const game = await this.prisma.games.findUnique({
-      where: { id: createLibraryDto.game_id },
-    });
-
-    if (!game) {
-      throw new NotFoundException(
-        `Game with ID ${createLibraryDto.game_id} not found`,
-      );
-    }
-
-    const library = await this.prisma.libraries.create({
-      data: {
-        user_id: createLibraryDto.user_id,
-        game_id: createLibraryDto.game_id,
-        hours_played: createLibraryDto.hours_played ?? 0,
-        ownership: createLibraryDto.ownership,
-        download_status: createLibraryDto.download_status,
-      },
-      include: {
-        users: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
+        include: {
+          users: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          games: {
+            select: {
+              id: true,
+              title: true,
+              price: true,
+              cover: true,
+            },
           },
         },
-        games: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            cover: true,
-          },
-        },
-      },
-    });
+      });
 
-    return library;
+      return library;
+    });
   }
 
   async findAll(skip?: number, take?: number) {
@@ -194,61 +196,65 @@ export class LibraryService {
   }
 
   async update(id: number, updateLibraryDto: UpdateLibraryDto) {
-    const existingLibrary = await this.prisma.libraries.findUnique({
-      where: { id },
-    });
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingLibrary = await tx.libraries.findUnique({
+        where: { id },
+      });
 
-    if (!existingLibrary) {
-      throw new NotFoundException(`Library entry with ID ${id} not found`);
-    }
+      if (!existingLibrary) {
+        throw new NotFoundException(`Library entry with ID ${id} not found`);
+      }
 
-    const updateData: any = {};
+      const updateData: any = {};
 
-    if (updateLibraryDto.hours_played !== undefined)
-      updateData.hours_played = updateLibraryDto.hours_played;
-    if (updateLibraryDto.ownership)
-      updateData.ownership = updateLibraryDto.ownership;
-    if (updateLibraryDto.download_status !== undefined)
-      updateData.download_status = updateLibraryDto.download_status;
+      if (updateLibraryDto.hours_played !== undefined)
+        updateData.hours_played = updateLibraryDto.hours_played;
+      if (updateLibraryDto.ownership)
+        updateData.ownership = updateLibraryDto.ownership;
+      if (updateLibraryDto.download_status !== undefined)
+        updateData.download_status = updateLibraryDto.download_status;
 
-    const library = await this.prisma.libraries.update({
-      where: { id },
-      data: updateData,
-      include: {
-        users: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
+      const library = await tx.libraries.update({
+        where: { id },
+        data: updateData,
+        include: {
+          users: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          games: {
+            select: {
+              id: true,
+              title: true,
+              price: true,
+              cover: true,
+            },
           },
         },
-        games: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            cover: true,
-          },
-        },
-      },
-    });
+      });
 
-    return library;
+      return library;
+    });
   }
 
   async remove(id: number) {
-    const library = await this.prisma.libraries.findUnique({
-      where: { id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const library = await tx.libraries.findUnique({
+        where: { id },
+      });
+
+      if (!library) {
+        throw new NotFoundException(`Library entry with ID ${id} not found`);
+      }
+
+      await tx.libraries.delete({
+        where: { id },
+      });
+
+      return { message: `Library entry with ID ${id} has been deleted` };
     });
-
-    if (!library) {
-      throw new NotFoundException(`Library entry with ID ${id} not found`);
-    }
-
-    await this.prisma.libraries.delete({
-      where: { id },
-    });
-
-    return { message: `Library entry with ID ${id} has been deleted` };
   }
 }
