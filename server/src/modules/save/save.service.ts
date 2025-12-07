@@ -22,9 +22,7 @@ export class SaveService {
     });
 
     if (existingSave) {
-      throw new ConflictException(
-        'Save for this user and game already exists',
-      );
+      throw new ConflictException('Save for this user and game already exists');
     }
 
     const user = await this.prisma.users.findUnique({
@@ -278,4 +276,3 @@ export class SaveService {
     return { message: `Save with ID ${id} has been deleted` };
   }
 }
-

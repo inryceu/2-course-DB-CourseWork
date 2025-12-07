@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateGameNewsDto } from './dto/create-game-news.dto';
 import { UpdateGameNewsDto } from './dto/update-game-news.dto';
@@ -130,7 +127,8 @@ export class GameNewsService {
     if (updateGameNewsDto.game_id !== undefined)
       updateData.game_id = updateGameNewsDto.game_id;
     if (updateGameNewsDto.title) updateData.title = updateGameNewsDto.title;
-    if (updateGameNewsDto.content) updateData.content = updateGameNewsDto.content;
+    if (updateGameNewsDto.content)
+      updateData.content = updateGameNewsDto.content;
     if (updateGameNewsDto.published_at)
       updateData.published_at = new Date(updateGameNewsDto.published_at);
 
@@ -167,4 +165,3 @@ export class GameNewsService {
     return { message: `Game news with ID ${id} has been deleted` };
   }
 }
-

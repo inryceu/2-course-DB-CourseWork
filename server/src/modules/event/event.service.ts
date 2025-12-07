@@ -120,10 +120,7 @@ export class EventService {
 
     return this.prisma.events.findMany({
       where: {
-        AND: [
-          { start_date: { lte: now } },
-          { end_date: { gte: now } },
-        ],
+        AND: [{ start_date: { lte: now } }, { end_date: { gte: now } }],
       },
       skip,
       take,
@@ -221,4 +218,3 @@ export class EventService {
     return { message: `Event with ID ${id} has been deleted` };
   }
 }
-

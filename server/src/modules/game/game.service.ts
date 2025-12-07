@@ -189,14 +189,16 @@ export class GameService {
       throw new NotFoundException(`Tag with ID ${tagId} not found`);
     }
 
-    const existingConnection = await this.prisma.game_tag_connection.findUnique({
-      where: {
-        game_id_tag_id: {
-          game_id: gameId,
-          tag_id: tagId,
+    const existingConnection = await this.prisma.game_tag_connection.findUnique(
+      {
+        where: {
+          game_id_tag_id: {
+            game_id: gameId,
+            tag_id: tagId,
+          },
         },
       },
-    });
+    );
 
     if (existingConnection) {
       throw new ConflictException('Tag is already associated with this game');
@@ -276,14 +278,16 @@ export class GameService {
       throw new NotFoundException(`Developer with ID ${devId} not found`);
     }
 
-    const existingConnection = await this.prisma.game_dev_connection.findUnique({
-      where: {
-        game_id_dev_id: {
-          game_id: gameId,
-          dev_id: devId,
+    const existingConnection = await this.prisma.game_dev_connection.findUnique(
+      {
+        where: {
+          game_id_dev_id: {
+            game_id: gameId,
+            dev_id: devId,
+          },
         },
       },
-    });
+    );
 
     if (existingConnection) {
       throw new ConflictException(

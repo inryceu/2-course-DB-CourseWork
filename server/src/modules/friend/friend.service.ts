@@ -27,9 +27,7 @@ export class FriendService {
     });
 
     if (existingFriend) {
-      throw new ConflictException(
-        'Friendship relationship already exists',
-      );
+      throw new ConflictException('Friendship relationship already exists');
     }
 
     const user = await this.prisma.users.findUnique({
@@ -196,7 +194,11 @@ export class FriendService {
     return friendship;
   }
 
-  async update(userId: number, friendId: number, updateFriendDto: UpdateFriendDto) {
+  async update(
+    userId: number,
+    friendId: number,
+    updateFriendDto: UpdateFriendDto,
+  ) {
     const existingFriendship = await this.prisma.friends.findUnique({
       where: {
         user_id_friend_id: {
@@ -270,7 +272,8 @@ export class FriendService {
       },
     });
 
-    return { message: `Friendship between user ${userId} and friend ${friendId} has been deleted` };
+    return {
+      message: `Friendship between user ${userId} and friend ${friendId} has been deleted`,
+    };
   }
 }
-

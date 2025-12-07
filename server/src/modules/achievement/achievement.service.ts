@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
 import { UpdateAchievementDto } from './dto/update-achievement.dto';
@@ -127,7 +123,8 @@ export class AchievementService {
 
     if (updateAchievementDto.game_id !== undefined)
       updateData.game_id = updateAchievementDto.game_id;
-    if (updateAchievementDto.title) updateData.title = updateAchievementDto.title;
+    if (updateAchievementDto.title)
+      updateData.title = updateAchievementDto.title;
     if (updateAchievementDto.icon) updateData.icon = updateAchievementDto.icon;
 
     const achievement = await this.prisma.achievements.update({
@@ -163,13 +160,19 @@ export class AchievementService {
     return { message: `Achievement with ID ${id} has been deleted` };
   }
 
-  async getAchievementUnlockers(achievementId: number, skip?: number, take?: number) {
+  async getAchievementUnlockers(
+    achievementId: number,
+    skip?: number,
+    take?: number,
+  ) {
     const achievement = await this.prisma.achievements.findUnique({
       where: { id: achievementId },
     });
 
     if (!achievement) {
-      throw new NotFoundException(`Achievement with ID ${achievementId} not found`);
+      throw new NotFoundException(
+        `Achievement with ID ${achievementId} not found`,
+      );
     }
 
     const connections = await this.prisma.user_achieve_connection.findMany({
@@ -193,4 +196,3 @@ export class AchievementService {
     return connections.map((conn) => conn.users);
   }
 }
-

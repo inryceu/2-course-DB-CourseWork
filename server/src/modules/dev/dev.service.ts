@@ -17,7 +17,9 @@ export class DevService {
     });
 
     if (existingDev) {
-      throw new ConflictException('Developer/Publisher with this name already exists');
+      throw new ConflictException(
+        'Developer/Publisher with this name already exists',
+      );
     }
 
     const dev = await this.prisma.devs.create({
@@ -48,7 +50,9 @@ export class DevService {
     });
 
     if (!dev) {
-      throw new NotFoundException(`Developer/Publisher with ID ${id} not found`);
+      throw new NotFoundException(
+        `Developer/Publisher with ID ${id} not found`,
+      );
     }
 
     return dev;
@@ -60,7 +64,9 @@ export class DevService {
     });
 
     if (!dev) {
-      throw new NotFoundException(`Developer/Publisher with name ${devName} not found`);
+      throw new NotFoundException(
+        `Developer/Publisher with name ${devName} not found`,
+      );
     }
 
     return dev;
@@ -72,7 +78,9 @@ export class DevService {
     });
 
     if (!existingDev) {
-      throw new NotFoundException(`Developer/Publisher with ID ${id} not found`);
+      throw new NotFoundException(
+        `Developer/Publisher with ID ${id} not found`,
+      );
     }
 
     if (updateDevDto.dev_name) {
@@ -108,7 +116,9 @@ export class DevService {
     });
 
     if (!dev) {
-      throw new NotFoundException(`Developer/Publisher with ID ${id} not found`);
+      throw new NotFoundException(
+        `Developer/Publisher with ID ${id} not found`,
+      );
     }
 
     await this.prisma.devs.delete({
@@ -124,7 +134,9 @@ export class DevService {
     });
 
     if (!dev) {
-      throw new NotFoundException(`Developer/Publisher with ID ${devId} not found`);
+      throw new NotFoundException(
+        `Developer/Publisher with ID ${devId} not found`,
+      );
     }
 
     const connections = await this.prisma.game_dev_connection.findMany({
@@ -150,4 +162,3 @@ export class DevService {
     return connections.map((conn) => conn.games);
   }
 }
-

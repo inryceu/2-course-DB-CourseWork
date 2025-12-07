@@ -15,7 +15,19 @@ import { FriendModule } from './modules/friend/friend.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule, AchievementModule, EventModule, SaveModule, GameNewsModule, FriendModule],
+  imports: [
+    UserModule,
+    GameModule,
+    LibraryModule,
+    ReviewModule,
+    TagModule,
+    DevModule,
+    AchievementModule,
+    EventModule,
+    SaveModule,
+    GameNewsModule,
+    FriendModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

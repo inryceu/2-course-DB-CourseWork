@@ -209,17 +209,20 @@ export class UserService {
     });
 
     if (!achievement) {
-      throw new NotFoundException(`Achievement with ID ${achievementId} not found`);
+      throw new NotFoundException(
+        `Achievement with ID ${achievementId} not found`,
+      );
     }
 
-    const existingConnection = await this.prisma.user_achieve_connection.findUnique({
-      where: {
-        user_id_achievement_id: {
-          user_id: userId,
-          achievement_id: achievementId,
+    const existingConnection =
+      await this.prisma.user_achieve_connection.findUnique({
+        where: {
+          user_id_achievement_id: {
+            user_id: userId,
+            achievement_id: achievementId,
+          },
         },
-      },
-    });
+      });
 
     if (existingConnection) {
       throw new ConflictException('User has already unlocked this achievement');
