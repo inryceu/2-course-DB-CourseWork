@@ -162,5 +162,35 @@ export class AchievementService {
 
     return { message: `Achievement with ID ${id} has been deleted` };
   }
+
+  async getAchievementUnlockers(achievementId: number, skip?: number, take?: number) {
+    const achievement = await this.prisma.achievements.findUnique({
+      where: { id: achievementId },
+    });
+
+    if (!achievement) {
+      throw new NotFoundException(`Achievement with ID ${achievementId} not found`);
+    }
+
+    const connections = await this.prisma.user_achieve_connection.findMany({
+      where: { achievement_id: achievementId },
+      skip,
+      take,
+      include: {
+        users: {
+          select: {
+            id: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        user_id: 'asc',
+      },
+    });
+
+    return connections.map((conn) => conn.users);
+  }
 }
 

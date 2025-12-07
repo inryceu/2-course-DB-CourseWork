@@ -32,14 +32,25 @@ export class DevController {
     return this.devService.findAll(skipNum, takeNum);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.devService.findOne(id);
-  }
-
   @Get('name/:devName')
   findByName(@Param('devName') devName: string) {
     return this.devService.findByName(devName);
+  }
+
+  @Get(':id/games')
+  getDeveloperGames(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    const skipNum = skip ? parseInt(skip, 10) : undefined;
+    const takeNum = take ? parseInt(take, 10) : undefined;
+    return this.devService.getDeveloperGames(id, skipNum, takeNum);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.devService.findOne(id);
   }
 
   @Patch(':id')

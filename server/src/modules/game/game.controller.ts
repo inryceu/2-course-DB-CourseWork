@@ -32,14 +32,60 @@ export class GameController {
     return this.gameService.findAll(skipNum, takeNum);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.gameService.findOne(id);
-  }
-
   @Get('title/:title')
   findByTitle(@Param('title') title: string) {
     return this.gameService.findByTitle(title);
+  }
+
+  @Post(':id/tags/:tagId')
+  @HttpCode(HttpStatus.CREATED)
+  addTagToGame(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('tagId', ParseIntPipe) tagId: number,
+  ) {
+    return this.gameService.addTagToGame(id, tagId);
+  }
+
+  @Delete(':id/tags/:tagId')
+  @HttpCode(HttpStatus.OK)
+  removeTagFromGame(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('tagId', ParseIntPipe) tagId: number,
+  ) {
+    return this.gameService.removeTagFromGame(id, tagId);
+  }
+
+  @Get(':id/tags')
+  getGameTags(@Param('id', ParseIntPipe) id: number) {
+    return this.gameService.getGameTags(id);
+  }
+
+  @Post(':id/developers/:devId')
+  @HttpCode(HttpStatus.CREATED)
+  addDeveloperToGame(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('devId', ParseIntPipe) devId: number,
+  ) {
+    return this.gameService.addDeveloperToGame(id, devId);
+  }
+
+  @Delete(':id/developers/:devId')
+  @HttpCode(HttpStatus.OK)
+  removeDeveloperFromGame(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('devId', ParseIntPipe) devId: number,
+  ) {
+    return this.gameService.removeDeveloperFromGame(id, devId);
+  }
+
+  @Get(':id/developers')
+  getGameDevelopers(@Param('id', ParseIntPipe) id: number) {
+    return this.gameService.getGameDevelopers(id);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.gameService.findOne(id);
   }
 
   @Patch(':id')

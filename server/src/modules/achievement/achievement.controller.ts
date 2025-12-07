@@ -43,6 +43,17 @@ export class AchievementController {
     return this.achievementService.findByGame(gameId, skipNum, takeNum);
   }
 
+  @Get(':id/unlockers')
+  getAchievementUnlockers(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    const skipNum = skip ? parseInt(skip, 10) : undefined;
+    const takeNum = take ? parseInt(take, 10) : undefined;
+    return this.achievementService.getAchievementUnlockers(id, skipNum, takeNum);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.achievementService.findOne(id);

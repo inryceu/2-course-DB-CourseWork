@@ -171,4 +171,182 @@ export class GameService {
 
     return { message: `Game with ID ${id} has been deleted` };
   }
+
+  async addTagToGame(gameId: number, tagId: number) {
+    const game = await this.prisma.games.findUnique({
+      where: { id: gameId },
+    });
+
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found`);
+    }
+
+    const tag = await this.prisma.tags.findUnique({
+      where: { id: tagId },
+    });
+
+    if (!tag) {
+      throw new NotFoundException(`Tag with ID ${tagId} not found`);
+    }
+
+    const existingConnection = await this.prisma.game_tag_connection.findUnique({
+      where: {
+        game_id_tag_id: {
+          game_id: gameId,
+          tag_id: tagId,
+        },
+      },
+    });
+
+    if (existingConnection) {
+      throw new ConflictException('Tag is already associated with this game');
+    }
+
+    await this.prisma.game_tag_connection.create({
+      data: {
+        game_id: gameId,
+        tag_id: tagId,
+      },
+    });
+
+    return { message: `Tag ${tagId} has been added to game ${gameId}` };
+  }
+
+  async removeTagFromGame(gameId: number, tagId: number) {
+    const connection = await this.prisma.game_tag_connection.findUnique({
+      where: {
+        game_id_tag_id: {
+          game_id: gameId,
+          tag_id: tagId,
+        },
+      },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(
+        `Tag ${tagId} is not associated with game ${gameId}`,
+      );
+    }
+
+    await this.prisma.game_tag_connection.delete({
+      where: {
+        game_id_tag_id: {
+          game_id: gameId,
+          tag_id: tagId,
+        },
+      },
+    });
+
+    return { message: `Tag ${tagId} has been removed from game ${gameId}` };
+  }
+
+  async getGameTags(gameId: number) {
+    const game = await this.prisma.games.findUnique({
+      where: { id: gameId },
+    });
+
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found`);
+    }
+
+    const connections = await this.prisma.game_tag_connection.findMany({
+      where: { game_id: gameId },
+      include: {
+        tags: true,
+      },
+    });
+
+    return connections.map((conn) => conn.tags);
+  }
+
+  async addDeveloperToGame(gameId: number, devId: number) {
+    const game = await this.prisma.games.findUnique({
+      where: { id: gameId },
+    });
+
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found`);
+    }
+
+    const dev = await this.prisma.devs.findUnique({
+      where: { id: devId },
+    });
+
+    if (!dev) {
+      throw new NotFoundException(`Developer with ID ${devId} not found`);
+    }
+
+    const existingConnection = await this.prisma.game_dev_connection.findUnique({
+      where: {
+        game_id_dev_id: {
+          game_id: gameId,
+          dev_id: devId,
+        },
+      },
+    });
+
+    if (existingConnection) {
+      throw new ConflictException(
+        'Developer is already associated with this game',
+      );
+    }
+
+    await this.prisma.game_dev_connection.create({
+      data: {
+        game_id: gameId,
+        dev_id: devId,
+      },
+    });
+
+    return { message: `Developer ${devId} has been added to game ${gameId}` };
+  }
+
+  async removeDeveloperFromGame(gameId: number, devId: number) {
+    const connection = await this.prisma.game_dev_connection.findUnique({
+      where: {
+        game_id_dev_id: {
+          game_id: gameId,
+          dev_id: devId,
+        },
+      },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(
+        `Developer ${devId} is not associated with game ${gameId}`,
+      );
+    }
+
+    await this.prisma.game_dev_connection.delete({
+      where: {
+        game_id_dev_id: {
+          game_id: gameId,
+          dev_id: devId,
+        },
+      },
+    });
+
+    return {
+      message: `Developer ${devId} has been removed from game ${gameId}`,
+    };
+  }
+
+  async getGameDevelopers(gameId: number) {
+    const game = await this.prisma.games.findUnique({
+      where: { id: gameId },
+    });
+
+    if (!game) {
+      throw new NotFoundException(`Game with ID ${gameId} not found`);
+    }
+
+    const connections = await this.prisma.game_dev_connection.findMany({
+      where: { game_id: gameId },
+      include: {
+        devs: true,
+      },
+    });
+
+    return connections.map((conn) => conn.devs);
+  }
 }

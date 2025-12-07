@@ -11,10 +11,11 @@ import { AchievementModule } from './modules/achievement/achievement.module';
 import { EventModule } from './modules/event/event.module';
 import { SaveModule } from './modules/save/save.module';
 import { GameNewsModule } from './modules/game-news/game-news.module';
+import { FriendModule } from './modules/friend/friend.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule, AchievementModule, EventModule, SaveModule, GameNewsModule],
+  imports: [UserModule, GameModule, LibraryModule, ReviewModule, TagModule, DevModule, AchievementModule, EventModule, SaveModule, GameNewsModule, FriendModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

@@ -111,5 +111,37 @@ export class TagService {
 
     return { message: `Tag with ID ${id} has been deleted` };
   }
+
+  async getGamesByTag(tagId: number, skip?: number, take?: number) {
+    const tag = await this.prisma.tags.findUnique({
+      where: { id: tagId },
+    });
+
+    if (!tag) {
+      throw new NotFoundException(`Tag with ID ${tagId} not found`);
+    }
+
+    const connections = await this.prisma.game_tag_connection.findMany({
+      where: { tag_id: tagId },
+      skip,
+      take,
+      include: {
+        games: {
+          select: {
+            id: true,
+            title: true,
+            cover: true,
+            price: true,
+            release_date: true,
+          },
+        },
+      },
+      orderBy: {
+        game_id: 'asc',
+      },
+    });
+
+    return connections.map((conn) => conn.games);
+  }
 }
 

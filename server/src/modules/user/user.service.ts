@@ -194,4 +194,105 @@ export class UserService {
 
     return { message: `User with ID ${id} has been deleted` };
   }
+
+  async unlockAchievement(userId: number, achievementId: number) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const achievement = await this.prisma.achievements.findUnique({
+      where: { id: achievementId },
+    });
+
+    if (!achievement) {
+      throw new NotFoundException(`Achievement with ID ${achievementId} not found`);
+    }
+
+    const existingConnection = await this.prisma.user_achieve_connection.findUnique({
+      where: {
+        user_id_achievement_id: {
+          user_id: userId,
+          achievement_id: achievementId,
+        },
+      },
+    });
+
+    if (existingConnection) {
+      throw new ConflictException('User has already unlocked this achievement');
+    }
+
+    await this.prisma.user_achieve_connection.create({
+      data: {
+        user_id: userId,
+        achievement_id: achievementId,
+      },
+    });
+
+    return {
+      message: `Achievement ${achievementId} has been unlocked for user ${userId}`,
+    };
+  }
+
+  async removeAchievement(userId: number, achievementId: number) {
+    const connection = await this.prisma.user_achieve_connection.findUnique({
+      where: {
+        user_id_achievement_id: {
+          user_id: userId,
+          achievement_id: achievementId,
+        },
+      },
+    });
+
+    if (!connection) {
+      throw new NotFoundException(
+        `User ${userId} has not unlocked achievement ${achievementId}`,
+      );
+    }
+
+    await this.prisma.user_achieve_connection.delete({
+      where: {
+        user_id_achievement_id: {
+          user_id: userId,
+          achievement_id: achievementId,
+        },
+      },
+    });
+
+    return {
+      message: `Achievement ${achievementId} has been removed from user ${userId}`,
+    };
+  }
+
+  async getUserAchievements(userId: number) {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    const connections = await this.prisma.user_achieve_connection.findMany({
+      where: { user_id: userId },
+      include: {
+        achievements: {
+          include: {
+            games: {
+              select: {
+                id: true,
+                title: true,
+                cover: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return connections.map((conn) => conn.achievements);
+  }
 }

@@ -32,14 +32,37 @@ export class UserController {
     return this.userService.findAll(skipNum, takeNum);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.userService.findOne(id);
-  }
-
   @Get('username/:username')
   findByUsername(@Param('username') username: string) {
     return this.userService.findByUsername(username);
+  }
+
+  @Post(':id/achievements/:achievementId')
+  @HttpCode(HttpStatus.CREATED)
+  unlockAchievement(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('achievementId', ParseIntPipe) achievementId: number,
+  ) {
+    return this.userService.unlockAchievement(id, achievementId);
+  }
+
+  @Delete(':id/achievements/:achievementId')
+  @HttpCode(HttpStatus.OK)
+  removeAchievement(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('achievementId', ParseIntPipe) achievementId: number,
+  ) {
+    return this.userService.removeAchievement(id, achievementId);
+  }
+
+  @Get(':id/achievements')
+  getUserAchievements(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.getUserAchievements(id);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.findOne(id);
   }
 
   @Patch(':id')

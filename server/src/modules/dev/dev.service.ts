@@ -117,5 +117,37 @@ export class DevService {
 
     return { message: `Developer/Publisher with ID ${id} has been deleted` };
   }
+
+  async getDeveloperGames(devId: number, skip?: number, take?: number) {
+    const dev = await this.prisma.devs.findUnique({
+      where: { id: devId },
+    });
+
+    if (!dev) {
+      throw new NotFoundException(`Developer/Publisher with ID ${devId} not found`);
+    }
+
+    const connections = await this.prisma.game_dev_connection.findMany({
+      where: { dev_id: devId },
+      skip,
+      take,
+      include: {
+        games: {
+          select: {
+            id: true,
+            title: true,
+            cover: true,
+            price: true,
+            release_date: true,
+          },
+        },
+      },
+      orderBy: {
+        game_id: 'asc',
+      },
+    });
+
+    return connections.map((conn) => conn.games);
+  }
 }
 

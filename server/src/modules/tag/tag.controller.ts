@@ -32,14 +32,25 @@ export class TagController {
     return this.tagService.findAll(skipNum, takeNum);
   }
 
-  @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.tagService.findOne(id);
-  }
-
   @Get('name/:tagName')
   findByName(@Param('tagName') tagName: string) {
     return this.tagService.findByName(tagName);
+  }
+
+  @Get(':id/games')
+  getGamesByTag(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    const skipNum = skip ? parseInt(skip, 10) : undefined;
+    const takeNum = take ? parseInt(take, 10) : undefined;
+    return this.tagService.getGamesByTag(id, skipNum, takeNum);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.tagService.findOne(id);
   }
 
   @Patch(':id')
