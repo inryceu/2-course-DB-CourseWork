@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCompleteGameDto } from './dto/create-complete-game.dto';
 import { CreateUserWithInitialSetupDto } from './dto/create-user-with-initial-setup.dto';
+import { CompleteGamePurchaseDto } from './dto/complete-game-purchase.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -257,6 +258,132 @@ export class ComplexQueriesService {
           },
         },
       });
+    });
+  }
+
+  async completeGamePurchase(dto: CompleteGamePurchaseDto) {
+    return this.prisma.executeTransaction(async (tx) => {
+      const user = await tx.users.findUnique({
+        where: { id: dto.userId },
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const game = await tx.games.findUnique({
+        where: { id: dto.gameId },
+      });
+      if (!game) {
+        throw new NotFoundException('Game not found');
+      }
+
+      const existingLibrary = await tx.libraries.findUnique({
+        where: {
+          user_id_game_id: {
+            user_id: dto.userId,
+            game_id: dto.gameId,
+          },
+        },
+      });
+      if (existingLibrary) {
+        throw new ConflictException('User already owns this game');
+      }
+
+      if (dto.initialReview && (dto.initialReview.rating < 1 || dto.initialReview.rating > 5)) {
+        throw new BadRequestException('Rating must be between 1 and 5');
+      }
+
+      const library = await tx.libraries.create({
+        data: {
+          user_id: dto.userId,
+          game_id: dto.gameId,
+          ownership: dto.ownership,
+          hours_played: 0,
+          download_status: 'not_installed',
+        },
+      });
+
+      let save: any = null;
+      if (dto.initialSaveData) {
+        const existingSave = await tx.saves.findUnique({
+          where: {
+            user_id_game_id: {
+              user_id: dto.userId,
+              game_id: dto.gameId,
+            },
+          },
+        });
+        if (!existingSave) {
+          save = await tx.saves.create({
+            data: {
+              user_id: dto.userId,
+              game_id: dto.gameId,
+              save_data: dto.initialSaveData,
+            },
+          });
+        }
+      }
+
+      const firstAchievement = await tx.achievements.findFirst({
+        where: { game_id: dto.gameId },
+        orderBy: { id: 'asc' },
+      });
+
+      let achievementUnlock: any = null;
+      if (firstAchievement) {
+        const existingUnlock = await tx.user_achieve_connection.findUnique({
+          where: {
+            user_id_achievement_id: {
+              user_id: dto.userId,
+              achievement_id: firstAchievement.id,
+            },
+          },
+        });
+        if (!existingUnlock) {
+          await tx.user_achieve_connection.create({
+            data: {
+              user_id: dto.userId,
+              achievement_id: firstAchievement.id,
+            },
+          });
+          achievementUnlock = firstAchievement;
+        }
+      }
+
+      let review: any = null;
+      if (dto.initialReview) {
+        const existingReview = await tx.reviews.findUnique({
+          where: {
+            user_id_game_id: {
+              user_id: dto.userId,
+              game_id: dto.gameId,
+            },
+          },
+        });
+        if (!existingReview) {
+          review = await tx.reviews.create({
+            data: {
+              user_id: dto.userId,
+              game_id: dto.gameId,
+              rating: dto.initialReview.rating,
+              content: dto.initialReview.content,
+            },
+          });
+        }
+      }
+
+      return {
+        library,
+        save,
+        achievementUnlocked: achievementUnlock,
+        review,
+        game: await tx.games.findUnique({
+          where: { id: dto.gameId },
+          include: {
+            achievements: true,
+          },
+        }),
+      };
     });
   }
 }

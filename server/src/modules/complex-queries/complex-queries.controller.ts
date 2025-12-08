@@ -14,6 +14,7 @@ import {
 import { ComplexQueriesService } from './complex-queries.service';
 import { CreateCompleteGameDto } from './dto/create-complete-game.dto';
 import { CreateUserWithInitialSetupDto } from './dto/create-user-with-initial-setup.dto';
+import { CompleteGamePurchaseDto } from './dto/complete-game-purchase.dto';
 
 @ApiTags('Complex Queries')
 @Controller('complex-queries')
@@ -182,6 +183,87 @@ export class ComplexQueriesController {
   ) {
     return this.complexQueriesService.createUserWithInitialSetup(
       createUserWithInitialSetupDto,
+    );
+  }
+
+  @Post('complete-game-purchase')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Complete game purchase with initial setup',
+    description:
+      'Creates a library entry, initial save, unlocks first achievement, and creates initial review in a single transaction. All operations are atomic - if any step fails, the entire operation is rolled back.',
+  })
+  @ApiBody({ type: CompleteGamePurchaseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Game purchase and all related entities successfully created',
+    schema: {
+      example: {
+        library: {
+          id: 1,
+          user_id: 1,
+          game_id: 1,
+          ownership: 'purchased',
+          hours_played: 0,
+          download_status: 'not_installed',
+        },
+        save: {
+          id: 1,
+          user_id: 1,
+          game_id: 1,
+          save_data: { level: 1, progress: 0 },
+          last_updated: '2023-05-19T10:00:00.000Z',
+        },
+        achievementUnlocked: {
+          id: 1,
+          game_id: 1,
+          title: 'First Steps',
+          icon: 'https://example.com/icon.png',
+        },
+        review: {
+          id: 1,
+          user_id: 1,
+          game_id: 1,
+          rating: 5,
+          content: 'Great game!',
+        },
+        game: {
+          id: 1,
+          title: 'The Witcher 3',
+          price: 29.99,
+          achievements: [
+            {
+              id: 1,
+              game_id: 1,
+              title: 'First Steps',
+              icon: 'https://example.com/icon.png',
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'User already owns this game',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User or game not found',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data (rating must be 1-5)',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error - transaction rolled back',
+  })
+  completeGamePurchase(
+    @Body() completeGamePurchaseDto: CompleteGamePurchaseDto,
+  ) {
+    return this.complexQueriesService.completeGamePurchase(
+      completeGamePurchaseDto,
     );
   }
 }
