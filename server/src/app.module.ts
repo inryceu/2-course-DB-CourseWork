@@ -13,6 +13,7 @@ import { SaveModule } from './modules/save/save.module';
 import { GameNewsModule } from './modules/game-news/game-news.module';
 import { FriendModule } from './modules/friend/friend.module';
 import { ComplexQueriesModule } from './modules/complex-queries/complex-queries.module';
+import { AnalyticalQueriesModule } from './modules/analytical-queries/analytical-queries.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
@@ -29,6 +30,7 @@ import { PrismaService } from './prisma/prisma.service';
     GameNewsModule,
     FriendModule,
     ComplexQueriesModule,
+    AnalyticalQueriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
