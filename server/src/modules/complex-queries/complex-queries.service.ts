@@ -2,9 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateCompleteGameDto } from './dto/create-complete-game.dto';
+import { CreateUserWithInitialSetupDto } from './dto/create-user-with-initial-setup.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ComplexQueriesService {
@@ -105,6 +108,153 @@ export class ComplexQueriesService {
           game_tag_connection: { include: { tags: true } },
           game_dev_connection: { include: { devs: true } },
           game_news: true,
+        },
+      });
+    });
+  }
+
+  async createUserWithInitialSetup(dto: CreateUserWithInitialSetupDto) {
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingUser = await tx.users.findFirst({
+        where: {
+          OR: [
+            { username: dto.user.username },
+            { email: dto.user.email },
+          ],
+        },
+      });
+      if (existingUser) {
+        throw new ConflictException('Username or email already exists');
+      }
+
+      if (dto.user.age < 13 || dto.user.age > 120) {
+        throw new BadRequestException('Age must be between 13 and 120');
+      }
+
+      if (dto.user.region.length !== 2) {
+        throw new BadRequestException('Region must be 2 characters');
+      }
+
+      if (dto.initialGameIds && dto.initialGameIds.length > 0) {
+        const games = await tx.games.findMany({
+          where: { id: { in: dto.initialGameIds } },
+        });
+        if (games.length !== dto.initialGameIds.length) {
+          throw new NotFoundException('One or more games not found');
+        }
+      }
+
+      if (dto.friendIds && dto.friendIds.length > 0) {
+        const friends = await tx.users.findMany({
+          where: { id: { in: dto.friendIds } },
+        });
+        if (friends.length !== dto.friendIds.length) {
+          throw new NotFoundException('One or more friends not found');
+        }
+      }
+
+      if (dto.achievementIds && dto.achievementIds.length > 0) {
+        const achievements = await tx.achievements.findMany({
+          where: { id: { in: dto.achievementIds } },
+        });
+        if (achievements.length !== dto.achievementIds.length) {
+          throw new NotFoundException('One or more achievements not found');
+        }
+      }
+
+      const passwordHash = await bcrypt.hash(dto.user.password, 10);
+      const user = await tx.users.create({
+        data: {
+          username: dto.user.username,
+          email: dto.user.email,
+          password_hash: passwordHash,
+          age: dto.user.age,
+          region: dto.user.region,
+          avatar: dto.user.avatar,
+        },
+      });
+
+      if (dto.initialGameIds) {
+        await Promise.all(
+          dto.initialGameIds.map((gameId) =>
+            tx.libraries.create({
+              data: {
+                user_id: user.id,
+                game_id: gameId,
+                ownership: 'wishlist',
+                hours_played: 0,
+              },
+            }),
+          ),
+        );
+      }
+
+      if (dto.friendIds) {
+        await Promise.all(
+          dto.friendIds.map((friendId) =>
+            tx.friends.create({
+              data: {
+                user_id: user.id,
+                friend_id: friendId,
+                status: 'pending',
+              },
+            }),
+          ),
+        );
+      }
+
+      if (dto.achievementIds) {
+        await Promise.all(
+          dto.achievementIds.map((achievementId) =>
+            tx.user_achieve_connection.create({
+              data: {
+                user_id: user.id,
+                achievement_id: achievementId,
+              },
+            }),
+          ),
+        );
+      }
+
+      return tx.users.findUnique({
+        where: { id: user.id },
+        include: {
+          libraries: {
+            include: {
+              games: {
+                select: {
+                  id: true,
+                  title: true,
+                  cover: true,
+                },
+              },
+            },
+          },
+          friends_friends_user_idTousers: {
+            include: {
+              users_friends_friend_idTousers: {
+                select: {
+                  id: true,
+                  username: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
+          user_achieve_connection: {
+            include: {
+              achievements: {
+                include: {
+                  games: {
+                    select: {
+                      id: true,
+                      title: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
     });
