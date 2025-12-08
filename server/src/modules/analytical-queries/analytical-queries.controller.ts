@@ -61,5 +61,58 @@ export class AnalyticalQueriesController {
   getRegionalSalesPotential() {
     return this.analyticalQueriesService.getRegionalSalesPotential();
   }
+
+  @Get('achievement-difficulty-ratio')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get achievement difficulty ratio',
+    description:
+      'Identifies games where players unlock the lowest percentage of available achievements. Returns games sorted by unlock percentage in ascending order (lowest percentage = most difficult achievements).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Achievement difficulty ratio data retrieved successfully',
+    schema: {
+      example: [
+        {
+          gameId: 1,
+          gameTitle: 'Dark Souls',
+          gameCover: 'https://example.com/cover.jpg',
+          totalAchievements: 50,
+          totalOwners: 1000,
+          totalUnlocks: 5000,
+          maxPossibleUnlocks: 50000,
+          unlockPercentage: 10.0,
+        },
+        {
+          gameId: 2,
+          gameTitle: 'Sekiro',
+          gameCover: 'https://example.com/cover2.jpg',
+          totalAchievements: 30,
+          totalOwners: 800,
+          totalUnlocks: 3600,
+          maxPossibleUnlocks: 24000,
+          unlockPercentage: 15.0,
+        },
+        {
+          gameId: 3,
+          gameTitle: 'Elden Ring',
+          gameCover: 'https://example.com/cover3.jpg',
+          totalAchievements: 42,
+          totalOwners: 2000,
+          totalUnlocks: 16800,
+          maxPossibleUnlocks: 84000,
+          unlockPercentage: 20.0,
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getAchievementDifficultyRatio() {
+    return this.analyticalQueriesService.getAchievementDifficultyRatio();
+  }
 }
 

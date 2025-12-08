@@ -61,5 +61,66 @@ export class AnalyticalQueriesService {
 
     return result;
   }
+
+  async getAchievementDifficultyRatio() {
+    const games = await this.prisma.games.findMany({
+      include: {
+        achievements: true,
+        libraries: {
+          where: {
+            ownership: 'purchased',
+          },
+          select: {
+            user_id: true,
+          },
+        },
+      },
+    });
+
+    const gameStats = await Promise.all(
+      games
+        .filter((game) => game.achievements.length > 0)
+        .map(async (game) => {
+          const totalAchievements = game.achievements.length;
+          const totalOwners = game.libraries.length;
+
+          if (totalOwners === 0) {
+            return null;
+          }
+
+          const achievementIds = game.achievements.map((a) => a.id);
+          const totalUnlocks = await this.prisma.user_achieve_connection.count({
+            where: {
+              achievement_id: {
+                in: achievementIds,
+              },
+            },
+          });
+
+          const maxPossibleUnlocks = totalAchievements * totalOwners;
+          const unlockPercentage =
+            maxPossibleUnlocks > 0
+              ? (totalUnlocks / maxPossibleUnlocks) * 100
+              : 0;
+
+          return {
+            gameId: game.id,
+            gameTitle: game.title,
+            gameCover: game.cover,
+            totalAchievements,
+            totalOwners,
+            totalUnlocks,
+            maxPossibleUnlocks,
+            unlockPercentage: Number(unlockPercentage.toFixed(2)),
+          };
+        }),
+    );
+
+    const result = gameStats
+      .filter((stat) => stat !== null)
+      .sort((a, b) => a!.unlockPercentage - b!.unlockPercentage);
+
+    return result;
+  }
 }
 
