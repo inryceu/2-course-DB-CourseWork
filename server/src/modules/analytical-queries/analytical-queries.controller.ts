@@ -114,5 +114,84 @@ export class AnalyticalQueriesController {
   getAchievementDifficultyRatio() {
     return this.analyticalQueriesService.getAchievementDifficultyRatio();
   }
+
+  @Get('genre-popularity-by-age')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get genre popularity by age',
+    description:
+      'Analyzes the popularity of game genres (tags) across different age groups. Returns statistics showing which genres are most popular in each age range (13-17, 18-24, 25-34, 35-44, 45+).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Genre popularity by age data retrieved successfully',
+    schema: {
+      example: [
+        {
+          ageGroup: '13-17',
+          totalTags: 15,
+          totalOccurrences: 1250,
+          tags: [
+            {
+              tagId: 1,
+              tagName: 'Action',
+              totalOccurrences: 450,
+              uniqueUsers: 120,
+              averageOccurrencesPerUser: 3.75,
+            },
+            {
+              tagId: 2,
+              tagName: 'Adventure',
+              totalOccurrences: 380,
+              uniqueUsers: 95,
+              averageOccurrencesPerUser: 4.0,
+            },
+          ],
+        },
+        {
+          ageGroup: '18-24',
+          totalTags: 20,
+          totalOccurrences: 3200,
+          tags: [
+            {
+              tagId: 3,
+              tagName: 'RPG',
+              totalOccurrences: 850,
+              uniqueUsers: 200,
+              averageOccurrencesPerUser: 4.25,
+            },
+            {
+              tagId: 1,
+              tagName: 'Action',
+              totalOccurrences: 720,
+              uniqueUsers: 180,
+              averageOccurrencesPerUser: 4.0,
+            },
+          ],
+        },
+        {
+          ageGroup: '25-34',
+          totalTags: 18,
+          totalOccurrences: 2800,
+          tags: [
+            {
+              tagId: 4,
+              tagName: 'Strategy',
+              totalOccurrences: 650,
+              uniqueUsers: 150,
+              averageOccurrencesPerUser: 4.33,
+            },
+          ],
+        },
+      ],
+    },
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error',
+  })
+  getGenrePopularityByAge() {
+    return this.analyticalQueriesService.getGenrePopularityByAge();
+  }
 }
 

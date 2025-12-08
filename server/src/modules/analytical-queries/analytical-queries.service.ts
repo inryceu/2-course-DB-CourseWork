@@ -47,7 +47,7 @@ export class AnalyticalQueriesService {
     }, {} as Record<string, { region: string; totalAmount: number; gameCount: number; userCount: Set<number> }>);
 
     const result = Object.values(regionStats)
-      .map((stat) => ({
+      .map((stat: { region: string; totalAmount: number; gameCount: number; userCount: Set<number> }) => ({
         region: stat.region,
         totalAmount: Number(stat.totalAmount.toFixed(2)),
         totalGames: stat.gameCount,
@@ -121,6 +121,108 @@ export class AnalyticalQueriesService {
       .sort((a, b) => a!.unlockPercentage - b!.unlockPercentage);
 
     return result;
+  }
+
+  getAgeGroup(age: number): string {
+    if (age >= 13 && age <= 17) return '13-17';
+    if (age >= 18 && age <= 24) return '18-24';
+    if (age >= 25 && age <= 34) return '25-34';
+    if (age >= 35 && age <= 44) return '35-44';
+    if (age >= 45) return '45+';
+    return 'unknown';
+  }
+
+  async getGenrePopularityByAge() {
+    const libraries = await this.prisma.libraries.findMany({
+      where: {
+        ownership: 'purchased',
+      },
+      include: {
+        users: {
+          select: {
+            age: true,
+          },
+        },
+        games: {
+          include: {
+            game_tag_connection: {
+              include: {
+                tags: {
+                  select: {
+                    id: true,
+                    tag_name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const ageTagStats: Record<
+      string,
+      Record<
+        number,
+        {
+          tagId: number;
+          tagName: string;
+          count: number;
+          users: Set<number>;
+        }
+      >
+    > = {};
+
+    libraries.forEach((library) => {
+      const ageGroup = this.getAgeGroup(library.users.age);
+      if (!ageTagStats[ageGroup]) {
+        ageTagStats[ageGroup] = {};
+      }
+
+      library.games.game_tag_connection.forEach((connection) => {
+        const tagId = connection.tags.id;
+        const tagName = connection.tags.tag_name;
+
+        if (!ageTagStats[ageGroup][tagId]) {
+          ageTagStats[ageGroup][tagId] = {
+            tagId,
+            tagName,
+            count: 0,
+            users: new Set(),
+          };
+        }
+
+        ageTagStats[ageGroup][tagId].count += 1;
+        ageTagStats[ageGroup][tagId].users.add(library.user_id);
+      });
+    });
+
+    const result = Object.entries(ageTagStats).map(([ageGroup, tags]) => {
+      const tagArray = Object.values(tags)
+        .map((tag) => ({
+          tagId: tag.tagId,
+          tagName: tag.tagName,
+          totalOccurrences: tag.count,
+          uniqueUsers: tag.users.size,
+          averageOccurrencesPerUser:
+            tag.users.size > 0
+              ? Number((tag.count / tag.users.size).toFixed(2))
+              : 0,
+        }))
+        .sort((a, b) => b.totalOccurrences - a.totalOccurrences);
+
+      return {
+        ageGroup,
+        totalTags: tagArray.length,
+        totalOccurrences: tagArray.reduce((sum, tag) => sum + tag.totalOccurrences, 0),
+        tags: tagArray,
+      };
+    });
+
+    return result.sort((a, b) => {
+      const ageOrder = ['13-17', '18-24', '25-34', '35-44', '45+', 'unknown'];
+      return ageOrder.indexOf(a.ageGroup) - ageOrder.indexOf(b.ageGroup);
+    });
   }
 }
 
