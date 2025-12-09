@@ -101,10 +101,17 @@ describe('SaveService (e2e)', () => {
 
   async function createTestUser(username: string) {
     const passwordHash = await bcrypt.hash('password123', 10);
+    const uniqueId =
+      Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
+    const uniqueUsername = `s${uniqueId}${username.substring(
+      0,
+      Math.max(0, 20 - uniqueId.length - 1),
+    )}`.substring(0, 20);
+    const uniqueEmail = `save_${username}_${Date.now()}_${Math.random().toString(36).substring(7)}@example.com`;
     const user = await prismaService.users.create({
       data: {
-        username,
-        email: `${username}@example.com`,
+        username: uniqueUsername,
+        email: uniqueEmail,
         password_hash: passwordHash,
         age: 25,
         region: 'US',
@@ -115,9 +122,10 @@ describe('SaveService (e2e)', () => {
   }
 
   async function createTestGame(title: string) {
+    const uniqueTitle = `save_${title}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const game = await prismaService.games.create({
       data: {
-        title,
+        title: uniqueTitle.substring(0, 50),
         price: 29.99,
         release_date: new Date('2025-01-01'),
         age_rating: 'E',
