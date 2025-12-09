@@ -1,16 +1,5 @@
-import {
-  Controller,
-  Post,
-  Body,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBody,
-} from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { ComplexQueriesService } from './complex-queries.service';
 import { CreateCompleteGameDto } from './dto/create-complete-game.dto';
 import { CreateUserWithInitialSetupDto } from './dto/create-user-with-initial-setup.dto';
@@ -19,9 +8,7 @@ import { CompleteGamePurchaseDto } from './dto/complete-game-purchase.dto';
 @ApiTags('Complex Queries')
 @Controller('complex-queries')
 export class ComplexQueriesController {
-  constructor(
-    private readonly complexQueriesService: ComplexQueriesService,
-  ) {}
+  constructor(private readonly complexQueriesService: ComplexQueriesService) {}
 
   @Post('complete-game')
   @HttpCode(HttpStatus.CREATED)
@@ -95,9 +82,7 @@ export class ComplexQueriesController {
     description: 'Internal server error - transaction rolled back',
   })
   createCompleteGame(@Body() createCompleteGameDto: CreateCompleteGameDto) {
-    return this.complexQueriesService.createCompleteGame(
-      createCompleteGameDto,
-    );
+    return this.complexQueriesService.createCompleteGame(createCompleteGameDto);
   }
 
   @Post('user-with-initial-setup')
@@ -267,4 +252,3 @@ export class ComplexQueriesController {
     );
   }
 }
-

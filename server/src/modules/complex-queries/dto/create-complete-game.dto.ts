@@ -188,4 +188,3 @@ export class CreateCompleteGameDto {
   @Type(() => NewsDataDto)
   initialNews: NewsDataDto;
 }
-

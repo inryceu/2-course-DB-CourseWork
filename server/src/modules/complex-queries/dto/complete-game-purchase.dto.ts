@@ -85,4 +85,3 @@ export class CompleteGamePurchaseDto {
   @Type(() => InitialReviewDto)
   initialReview?: InitialReviewDto;
 }
-

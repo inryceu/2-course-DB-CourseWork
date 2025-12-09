@@ -111,4 +111,3 @@ export class CreateUserWithInitialSetupDto {
   @IsNumber({}, { each: true })
   achievementIds?: number[];
 }
-

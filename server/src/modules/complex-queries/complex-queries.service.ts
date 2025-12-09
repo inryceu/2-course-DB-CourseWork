@@ -118,10 +118,7 @@ export class ComplexQueriesService {
     return this.prisma.executeTransaction(async (tx) => {
       const existingUser = await tx.users.findFirst({
         where: {
-          OR: [
-            { username: dto.user.username },
-            { email: dto.user.email },
-          ],
+          OR: [{ username: dto.user.username }, { email: dto.user.email }],
         },
       });
       if (existingUser) {
@@ -289,7 +286,10 @@ export class ComplexQueriesService {
         throw new ConflictException('User already owns this game');
       }
 
-      if (dto.initialReview && (dto.initialReview.rating < 1 || dto.initialReview.rating > 5)) {
+      if (
+        dto.initialReview &&
+        (dto.initialReview.rating < 1 || dto.initialReview.rating > 5)
+      ) {
         throw new BadRequestException('Rating must be between 1 and 5');
       }
 
@@ -387,4 +387,3 @@ export class ComplexQueriesService {
     });
   }
 }
-

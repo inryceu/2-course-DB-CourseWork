@@ -1,14 +1,5 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AnalyticalQueriesService } from './analytical-queries.service';
 
 @ApiTags('Analytical Queries')
@@ -32,7 +23,7 @@ export class AnalyticalQueriesController {
       example: [
         {
           region: 'US',
-          totalAmount: 15499.50,
+          totalAmount: 15499.5,
           totalGames: 245,
           uniqueUsers: 89,
           averageAmountPerUser: 174.15,
@@ -194,4 +185,3 @@ export class AnalyticalQueriesController {
     return this.analyticalQueriesService.getGenrePopularityByAge();
   }
 }
-

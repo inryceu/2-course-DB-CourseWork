@@ -128,7 +128,8 @@ export class AchievementService {
         updateData.game_id = updateAchievementDto.game_id;
       if (updateAchievementDto.title)
         updateData.title = updateAchievementDto.title;
-      if (updateAchievementDto.icon) updateData.icon = updateAchievementDto.icon;
+      if (updateAchievementDto.icon)
+        updateData.icon = updateAchievementDto.icon;
 
       const achievement = await tx.achievements.update({
         where: { id },

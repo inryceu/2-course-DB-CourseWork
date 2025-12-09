@@ -23,7 +23,9 @@ export class SaveService {
       });
 
       if (existingSave) {
-        throw new ConflictException('Save for this user and game already exists');
+        throw new ConflictException(
+          'Save for this user and game already exists',
+        );
       }
 
       const user = await tx.users.findUnique({

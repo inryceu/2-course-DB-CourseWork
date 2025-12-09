@@ -24,39 +24,55 @@ export class AnalyticalQueriesService {
       },
     });
 
-    const regionStats = wishlistLibraries.reduce((acc, library) => {
-      const region = library.users.region;
-      const price = library.games.price
-        ? Number(library.games.price)
-        : 0;
+    const regionStats = wishlistLibraries.reduce(
+      (acc, library) => {
+        const region = library.users.region;
+        const price = library.games.price ? Number(library.games.price) : 0;
 
-      if (!acc[region]) {
-        acc[region] = {
-          region,
-          totalAmount: 0,
-          gameCount: 0,
-          userCount: new Set(),
-        };
-      }
+        if (!acc[region]) {
+          acc[region] = {
+            region,
+            totalAmount: 0,
+            gameCount: 0,
+            userCount: new Set(),
+          };
+        }
 
-      acc[region].totalAmount += price;
-      acc[region].gameCount += 1;
-      acc[region].userCount.add(library.user_id);
+        acc[region].totalAmount += price;
+        acc[region].gameCount += 1;
+        acc[region].userCount.add(library.user_id);
 
-      return acc;
-    }, {} as Record<string, { region: string; totalAmount: number; gameCount: number; userCount: Set<number> }>);
+        return acc;
+      },
+      {} as Record<
+        string,
+        {
+          region: string;
+          totalAmount: number;
+          gameCount: number;
+          userCount: Set<number>;
+        }
+      >,
+    );
 
     const result = Object.values(regionStats)
-      .map((stat: { region: string; totalAmount: number; gameCount: number; userCount: Set<number> }) => ({
-        region: stat.region,
-        totalAmount: Number(stat.totalAmount.toFixed(2)),
-        totalGames: stat.gameCount,
-        uniqueUsers: stat.userCount.size,
-        averageAmountPerUser:
-          stat.userCount.size > 0
-            ? Number((stat.totalAmount / stat.userCount.size).toFixed(2))
-            : 0,
-      }))
+      .map(
+        (stat: {
+          region: string;
+          totalAmount: number;
+          gameCount: number;
+          userCount: Set<number>;
+        }) => ({
+          region: stat.region,
+          totalAmount: Number(stat.totalAmount.toFixed(2)),
+          totalGames: stat.gameCount,
+          uniqueUsers: stat.userCount.size,
+          averageAmountPerUser:
+            stat.userCount.size > 0
+              ? Number((stat.totalAmount / stat.userCount.size).toFixed(2))
+              : 0,
+        }),
+      )
       .sort((a, b) => b.totalAmount - a.totalAmount);
 
     return result;
@@ -214,7 +230,10 @@ export class AnalyticalQueriesService {
       return {
         ageGroup,
         totalTags: tagArray.length,
-        totalOccurrences: tagArray.reduce((sum, tag) => sum + tag.totalOccurrences, 0),
+        totalOccurrences: tagArray.reduce(
+          (sum, tag) => sum + tag.totalOccurrences,
+          0,
+        ),
         tags: tagArray,
       };
     });
@@ -225,4 +244,3 @@ export class AnalyticalQueriesService {
     });
   }
 }
-

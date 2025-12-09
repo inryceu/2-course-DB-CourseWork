@@ -157,7 +157,10 @@ export class UserService {
       if (updateUserDto.username) updateData.username = updateUserDto.username;
       if (updateUserDto.email) updateData.email = updateUserDto.email;
       if (updateUserDto.password) {
-        updateData.password_hash = await bcrypt.hash(updateUserDto.password, 10);
+        updateData.password_hash = await bcrypt.hash(
+          updateUserDto.password,
+          10,
+        );
       }
       if (updateUserDto.age !== undefined) updateData.age = updateUserDto.age;
       if (updateUserDto.region) updateData.region = updateUserDto.region;
@@ -221,18 +224,19 @@ export class UserService {
         );
       }
 
-      const existingConnection =
-        await tx.user_achieve_connection.findUnique({
-          where: {
-            user_id_achievement_id: {
-              user_id: userId,
-              achievement_id: achievementId,
-            },
+      const existingConnection = await tx.user_achieve_connection.findUnique({
+        where: {
+          user_id_achievement_id: {
+            user_id: userId,
+            achievement_id: achievementId,
           },
-        });
+        },
+      });
 
       if (existingConnection) {
-        throw new ConflictException('User has already unlocked this achievement');
+        throw new ConflictException(
+          'User has already unlocked this achievement',
+        );
       }
 
       await tx.user_achieve_connection.create({
