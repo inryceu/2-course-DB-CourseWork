@@ -660,7 +660,7 @@ describe('UserService (e2e)', () => {
         data: {
           title: 'Test Game',
           price: 19.99,
-          release_date: new Date('2024-01-01'),
+          release_date: new Date('2025-01-01'),
           age_rating: 'E',
           cover: 'https://example.com/cover.jpg',
           system_requirements: {},
