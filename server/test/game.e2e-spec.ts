@@ -106,10 +106,14 @@ describe('GameService (e2e)', () => {
   }
 
   async function createTestTag(tagName: string) {
-    const uniqueTagName = `g_${tagName}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const sanitizedName = tagName.toLowerCase().replace(/[^a-z]/g, '');
+    const uniqueId =
+      Date.now().toString(36).replace(/\d/g, '') +
+      Math.random().toString(36).substring(2, 5).replace(/\d/g, '');
+    const uniqueTagName = `${sanitizedName}${uniqueId}`.substring(0, 25);
     const tag = await prismaService.tags.create({
       data: {
-        tag_name: uniqueTagName.substring(0, 25),
+        tag_name: uniqueTagName,
       },
     });
     createdTagIds.push(tag.id);
