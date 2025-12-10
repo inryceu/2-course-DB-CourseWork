@@ -12,64 +12,68 @@ export class SaveService {
   constructor(private prisma: PrismaService) {}
 
   async create(createSaveDto: CreateSaveDto) {
-    const existingSave = await this.prisma.saves.findUnique({
-      where: {
-        user_id_game_id: {
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingSave = await tx.saves.findUnique({
+        where: {
+          user_id_game_id: {
+            user_id: createSaveDto.user_id,
+            game_id: createSaveDto.game_id,
+          },
+        },
+      });
+
+      if (existingSave) {
+        throw new ConflictException(
+          'Save for this user and game already exists',
+        );
+      }
+
+      const user = await tx.users.findUnique({
+        where: { id: createSaveDto.user_id },
+      });
+
+      if (!user) {
+        throw new NotFoundException(
+          `User with ID ${createSaveDto.user_id} not found`,
+        );
+      }
+
+      const game = await tx.games.findUnique({
+        where: { id: createSaveDto.game_id },
+      });
+
+      if (!game) {
+        throw new NotFoundException(
+          `Game with ID ${createSaveDto.game_id} not found`,
+        );
+      }
+
+      const save = await tx.saves.create({
+        data: {
           user_id: createSaveDto.user_id,
           game_id: createSaveDto.game_id,
+          save_data: createSaveDto.save_data,
         },
-      },
-    });
-
-    if (existingSave) {
-      throw new ConflictException('Save for this user and game already exists');
-    }
-
-    const user = await this.prisma.users.findUnique({
-      where: { id: createSaveDto.user_id },
-    });
-
-    if (!user) {
-      throw new NotFoundException(
-        `User with ID ${createSaveDto.user_id} not found`,
-      );
-    }
-
-    const game = await this.prisma.games.findUnique({
-      where: { id: createSaveDto.game_id },
-    });
-
-    if (!game) {
-      throw new NotFoundException(
-        `Game with ID ${createSaveDto.game_id} not found`,
-      );
-    }
-
-    const save = await this.prisma.saves.create({
-      data: {
-        user_id: createSaveDto.user_id,
-        game_id: createSaveDto.game_id,
-        save_data: createSaveDto.save_data,
-      },
-      include: {
-        users: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
+        include: {
+          users: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+            },
+          },
+          games: {
+            select: {
+              id: true,
+              title: true,
+              cover: true,
+            },
           },
         },
-        games: {
-          select: {
-            id: true,
-            title: true,
-            cover: true,
-          },
-        },
-      },
-    });
+      });
 
-    return save;
+      return save;
+    });
   }
 
   async findAll(skip?: number, take?: number) {
@@ -221,58 +225,62 @@ export class SaveService {
   }
 
   async update(id: number, updateSaveDto: UpdateSaveDto) {
-    const existingSave = await this.prisma.saves.findUnique({
-      where: { id },
-    });
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingSave = await tx.saves.findUnique({
+        where: { id },
+      });
 
-    if (!existingSave) {
-      throw new NotFoundException(`Save with ID ${id} not found`);
-    }
+      if (!existingSave) {
+        throw new NotFoundException(`Save with ID ${id} not found`);
+      }
 
-    const updateData: any = {};
+      const updateData: any = {};
 
-    if (updateSaveDto.save_data) {
-      updateData.save_data = updateSaveDto.save_data;
-      updateData.last_updated = new Date();
-    }
+      if (updateSaveDto.save_data) {
+        updateData.save_data = updateSaveDto.save_data;
+        updateData.last_updated = new Date();
+      }
 
-    const save = await this.prisma.saves.update({
-      where: { id },
-      data: updateData,
-      include: {
-        users: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
+      const save = await tx.saves.update({
+        where: { id },
+        data: updateData,
+        include: {
+          users: {
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+            },
+          },
+          games: {
+            select: {
+              id: true,
+              title: true,
+              cover: true,
+            },
           },
         },
-        games: {
-          select: {
-            id: true,
-            title: true,
-            cover: true,
-          },
-        },
-      },
-    });
+      });
 
-    return save;
+      return save;
+    });
   }
 
   async remove(id: number) {
-    const save = await this.prisma.saves.findUnique({
-      where: { id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const save = await tx.saves.findUnique({
+        where: { id },
+      });
+
+      if (!save) {
+        throw new NotFoundException(`Save with ID ${id} not found`);
+      }
+
+      await tx.saves.delete({
+        where: { id },
+      });
+
+      return { message: `Save with ID ${id} has been deleted` };
     });
-
-    if (!save) {
-      throw new NotFoundException(`Save with ID ${id} not found`);
-    }
-
-    await this.prisma.saves.delete({
-      where: { id },
-    });
-
-    return { message: `Save with ID ${id} has been deleted` };
   }
 }

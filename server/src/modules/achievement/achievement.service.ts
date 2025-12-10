@@ -8,34 +8,36 @@ export class AchievementService {
   constructor(private prisma: PrismaService) {}
 
   async create(createAchievementDto: CreateAchievementDto) {
-    const game = await this.prisma.games.findUnique({
-      where: { id: createAchievementDto.game_id },
-    });
+    return this.prisma.executeTransaction(async (tx) => {
+      const game = await tx.games.findUnique({
+        where: { id: createAchievementDto.game_id },
+      });
 
-    if (!game) {
-      throw new NotFoundException(
-        `Game with ID ${createAchievementDto.game_id} not found`,
-      );
-    }
+      if (!game) {
+        throw new NotFoundException(
+          `Game with ID ${createAchievementDto.game_id} not found`,
+        );
+      }
 
-    const achievement = await this.prisma.achievements.create({
-      data: {
-        game_id: createAchievementDto.game_id,
-        title: createAchievementDto.title,
-        icon: createAchievementDto.icon,
-      },
-      include: {
-        games: {
-          select: {
-            id: true,
-            title: true,
-            cover: true,
+      const achievement = await tx.achievements.create({
+        data: {
+          game_id: createAchievementDto.game_id,
+          title: createAchievementDto.title,
+          icon: createAchievementDto.icon,
+        },
+        include: {
+          games: {
+            select: {
+              id: true,
+              title: true,
+              cover: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return achievement;
+      return achievement;
+    });
   }
 
   async findAll(skip?: number, take?: number) {
@@ -99,65 +101,70 @@ export class AchievementService {
   }
 
   async update(id: number, updateAchievementDto: UpdateAchievementDto) {
-    const existingAchievement = await this.prisma.achievements.findUnique({
-      where: { id },
-    });
-
-    if (!existingAchievement) {
-      throw new NotFoundException(`Achievement with ID ${id} not found`);
-    }
-
-    if (updateAchievementDto.game_id) {
-      const game = await this.prisma.games.findUnique({
-        where: { id: updateAchievementDto.game_id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingAchievement = await tx.achievements.findUnique({
+        where: { id },
       });
 
-      if (!game) {
-        throw new NotFoundException(
-          `Game with ID ${updateAchievementDto.game_id} not found`,
-        );
+      if (!existingAchievement) {
+        throw new NotFoundException(`Achievement with ID ${id} not found`);
       }
-    }
 
-    const updateData: any = {};
+      if (updateAchievementDto.game_id) {
+        const game = await tx.games.findUnique({
+          where: { id: updateAchievementDto.game_id },
+        });
 
-    if (updateAchievementDto.game_id !== undefined)
-      updateData.game_id = updateAchievementDto.game_id;
-    if (updateAchievementDto.title)
-      updateData.title = updateAchievementDto.title;
-    if (updateAchievementDto.icon) updateData.icon = updateAchievementDto.icon;
+        if (!game) {
+          throw new NotFoundException(
+            `Game with ID ${updateAchievementDto.game_id} not found`,
+          );
+        }
+      }
 
-    const achievement = await this.prisma.achievements.update({
-      where: { id },
-      data: updateData,
-      include: {
-        games: {
-          select: {
-            id: true,
-            title: true,
-            cover: true,
+      const updateData: any = {};
+
+      if (updateAchievementDto.game_id !== undefined)
+        updateData.game_id = updateAchievementDto.game_id;
+      if (updateAchievementDto.title)
+        updateData.title = updateAchievementDto.title;
+      if (updateAchievementDto.icon)
+        updateData.icon = updateAchievementDto.icon;
+
+      const achievement = await tx.achievements.update({
+        where: { id },
+        data: updateData,
+        include: {
+          games: {
+            select: {
+              id: true,
+              title: true,
+              cover: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return achievement;
+      return achievement;
+    });
   }
 
   async remove(id: number) {
-    const achievement = await this.prisma.achievements.findUnique({
-      where: { id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const achievement = await tx.achievements.findUnique({
+        where: { id },
+      });
+
+      if (!achievement) {
+        throw new NotFoundException(`Achievement with ID ${id} not found`);
+      }
+
+      await tx.achievements.delete({
+        where: { id },
+      });
+
+      return { message: `Achievement with ID ${id} has been deleted` };
     });
-
-    if (!achievement) {
-      throw new NotFoundException(`Achievement with ID ${id} not found`);
-    }
-
-    await this.prisma.achievements.delete({
-      where: { id },
-    });
-
-    return { message: `Achievement with ID ${id} has been deleted` };
   }
 
   async getAchievementUnlockers(

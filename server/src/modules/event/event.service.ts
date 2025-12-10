@@ -13,44 +13,53 @@ export class EventService {
   constructor(private prisma: PrismaService) {}
 
   async create(createEventDto: CreateEventDto) {
-    const game = await this.prisma.games.findUnique({
-      where: { id: createEventDto.game_id },
-    });
+    return this.prisma.executeTransaction(async (tx) => {
+      const game = await tx.games.findUnique({
+        where: { id: createEventDto.game_id },
+      });
 
-    if (!game) {
-      throw new NotFoundException(
-        `Game with ID ${createEventDto.game_id} not found`,
-      );
-    }
+      if (!game) {
+        throw new NotFoundException(
+          `Game with ID ${createEventDto.game_id} not found`,
+        );
+      }
 
-    const startDate = new Date(createEventDto.start_date);
-    const endDate = new Date(createEventDto.end_date);
+      const startDate = new Date(createEventDto.start_date);
+      const endDate = new Date(createEventDto.end_date);
 
-    if (endDate <= startDate) {
-      throw new BadRequestException('End date must be after start date');
-    }
+      if (endDate <= startDate) {
+        throw new BadRequestException('End date must be after start date');
+      }
 
-    const event = await this.prisma.events.create({
-      data: {
-        game_id: createEventDto.game_id,
-        discount: createEventDto.discount,
-        start_date: startDate,
-        end_date: endDate,
-        type: createEventDto.type as ev_type,
-      },
-      include: {
-        games: {
-          select: {
-            id: true,
-            title: true,
-            cover: true,
-            price: true,
+      let prismaType: ev_type;
+      if (createEventDto.type === 'free weekend') {
+        prismaType = ev_type.free_weekend;
+      } else {
+        prismaType = createEventDto.type as ev_type;
+      }
+
+      const event = await tx.events.create({
+        data: {
+          game_id: createEventDto.game_id,
+          discount: createEventDto.discount,
+          start_date: startDate,
+          end_date: endDate,
+          type: prismaType,
+        },
+        include: {
+          games: {
+            select: {
+              id: true,
+              title: true,
+              cover: true,
+              price: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return event;
+      return event;
+    });
   }
 
   async findAll(skip?: number, take?: number) {
@@ -141,80 +150,90 @@ export class EventService {
   }
 
   async update(id: number, updateEventDto: UpdateEventDto) {
-    const existingEvent = await this.prisma.events.findUnique({
-      where: { id },
-    });
-
-    if (!existingEvent) {
-      throw new NotFoundException(`Event with ID ${id} not found`);
-    }
-
-    if (updateEventDto.game_id) {
-      const game = await this.prisma.games.findUnique({
-        where: { id: updateEventDto.game_id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const existingEvent = await tx.events.findUnique({
+        where: { id },
       });
 
-      if (!game) {
-        throw new NotFoundException(
-          `Game with ID ${updateEventDto.game_id} not found`,
-        );
+      if (!existingEvent) {
+        throw new NotFoundException(`Event with ID ${id} not found`);
       }
-    }
 
-    const startDate = updateEventDto.start_date
-      ? new Date(updateEventDto.start_date)
-      : existingEvent.start_date;
-    const endDate = updateEventDto.end_date
-      ? new Date(updateEventDto.end_date)
-      : existingEvent.end_date;
+      if (updateEventDto.game_id) {
+        const game = await tx.games.findUnique({
+          where: { id: updateEventDto.game_id },
+        });
 
-    if (endDate <= startDate) {
-      throw new BadRequestException('End date must be after start date');
-    }
+        if (!game) {
+          throw new NotFoundException(
+            `Game with ID ${updateEventDto.game_id} not found`,
+          );
+        }
+      }
 
-    const updateData: any = {};
+      const startDate = updateEventDto.start_date
+        ? new Date(updateEventDto.start_date)
+        : existingEvent.start_date;
+      const endDate = updateEventDto.end_date
+        ? new Date(updateEventDto.end_date)
+        : existingEvent.end_date;
 
-    if (updateEventDto.game_id !== undefined)
-      updateData.game_id = updateEventDto.game_id;
-    if (updateEventDto.discount !== undefined)
-      updateData.discount = updateEventDto.discount;
-    if (updateEventDto.start_date)
-      updateData.start_date = new Date(updateEventDto.start_date);
-    if (updateEventDto.end_date)
-      updateData.end_date = new Date(updateEventDto.end_date);
-    if (updateEventDto.type) updateData.type = updateEventDto.type;
+      if (endDate <= startDate) {
+        throw new BadRequestException('End date must be after start date');
+      }
 
-    const event = await this.prisma.events.update({
-      where: { id },
-      data: updateData,
-      include: {
-        games: {
-          select: {
-            id: true,
-            title: true,
-            cover: true,
-            price: true,
+      const updateData: any = {};
+
+      if (updateEventDto.game_id !== undefined)
+        updateData.game_id = updateEventDto.game_id;
+      if (updateEventDto.discount !== undefined)
+        updateData.discount = updateEventDto.discount;
+      if (updateEventDto.start_date)
+        updateData.start_date = new Date(updateEventDto.start_date);
+      if (updateEventDto.end_date)
+        updateData.end_date = new Date(updateEventDto.end_date);
+      if (updateEventDto.type) {
+        if (updateEventDto.type === 'free weekend') {
+          updateData.type = ev_type.free_weekend;
+        } else {
+          updateData.type = updateEventDto.type as ev_type;
+        }
+      }
+
+      const event = await tx.events.update({
+        where: { id },
+        data: updateData,
+        include: {
+          games: {
+            select: {
+              id: true,
+              title: true,
+              cover: true,
+              price: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return event;
+      return event;
+    });
   }
 
   async remove(id: number) {
-    const event = await this.prisma.events.findUnique({
-      where: { id },
+    return this.prisma.executeTransaction(async (tx) => {
+      const event = await tx.events.findUnique({
+        where: { id },
+      });
+
+      if (!event) {
+        throw new NotFoundException(`Event with ID ${id} not found`);
+      }
+
+      await tx.events.delete({
+        where: { id },
+      });
+
+      return { message: `Event with ID ${id} has been deleted` };
     });
-
-    if (!event) {
-      throw new NotFoundException(`Event with ID ${id} not found`);
-    }
-
-    await this.prisma.events.delete({
-      where: { id },
-    });
-
-    return { message: `Event with ID ${id} has been deleted` };
   }
 }
