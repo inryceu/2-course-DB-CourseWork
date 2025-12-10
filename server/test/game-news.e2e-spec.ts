@@ -313,9 +313,10 @@ describe('GameNewsService (e2e)', () => {
       const result = await gameNewsService.findAll();
       const foundNews = result.find((n) => n.id === gameNews.id);
 
-      expect(foundNews.games).toBeDefined();
-      expect(foundNews.games.id).toBe(game.id);
-      expect(foundNews.games.title).toBe(game.title);
+      expect(foundNews).toBeDefined();
+      expect(foundNews?.games).toBeDefined();
+      expect(foundNews?.games.id).toBe(game.id);
+      expect(foundNews?.games.title).toBe(game.title);
     });
   });
 

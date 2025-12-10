@@ -73,7 +73,7 @@ describe('TagService (e2e)', () => {
         where: { id: tag.id },
       });
       expect(dbTag).toBeDefined();
-      expect(dbTag.tag_name).toBe(createTagDto.tag_name);
+      expect(dbTag?.tag_name).toBe(createTagDto.tag_name);
     });
 
     it('should create a tag with maximum length name', async () => {
@@ -268,7 +268,7 @@ describe('TagService (e2e)', () => {
       const dbTag = await prismaService.tags.findUnique({
         where: { id: createdTag.id },
       });
-      expect(dbTag.tag_name).toBe(updateDto.tag_name);
+      expect(dbTag?.tag_name).toBe(updateDto.tag_name);
     });
 
     it('should allow updating to same name', async () => {
@@ -500,7 +500,7 @@ describe('TagService (e2e)', () => {
       });
       createdTagIds.push(tag.id);
 
-      const games = [];
+      const games: any[] = [];
       for (let i = 1; i <= 5; i++) {
         const game = await prismaService.games.create({
           data: {

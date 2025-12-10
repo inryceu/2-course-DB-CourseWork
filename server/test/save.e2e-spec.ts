@@ -382,12 +382,13 @@ describe('SaveService (e2e)', () => {
       const result = await saveService.findAll();
       const foundSave = result.find((s) => s.id === save.id);
 
-      expect(foundSave.users).toBeDefined();
-      expect(foundSave.users.id).toBe(user.id);
-      expect(foundSave.users.username).toBe(user.username);
-      expect(foundSave.games).toBeDefined();
-      expect(foundSave.games.id).toBe(game.id);
-      expect(foundSave.games.title).toBe(game.title);
+      expect(foundSave).toBeDefined();
+      expect(foundSave?.users).toBeDefined();
+      expect(foundSave?.users.id).toBe(user.id);
+      expect(foundSave?.users.username).toBe(user.username);
+      expect(foundSave?.games).toBeDefined();
+      expect(foundSave?.games.id).toBe(game.id);
+      expect(foundSave?.games.title).toBe(game.title);
     });
   });
 

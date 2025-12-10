@@ -36,11 +36,10 @@ export class UpdateDevDto {
     description: 'URL to developer/publisher logo',
     example: 'https://example.com/new-logo.png',
     maxLength: 2083,
+    nullable: true,
   })
   @IsOptional()
-  @IsString()
-  @Length(1, 2083)
-  logo?: string;
+  logo?: string | null;
 
   @ApiPropertyOptional({
     description: 'Type of developer/publisher',

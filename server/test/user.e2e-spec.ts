@@ -110,10 +110,10 @@ describe('UserService (e2e)', () => {
         where: { id: user.id },
       });
       expect(dbUser).toBeDefined();
-      expect(dbUser.password_hash).toBeDefined();
+      expect(dbUser?.password_hash).toBeDefined();
       const isPasswordValid = await bcrypt.compare(
         createUserDto.password,
-        dbUser.password_hash,
+        dbUser?.password_hash || '',
       );
       expect(isPasswordValid).toBe(true);
     });
@@ -404,9 +404,10 @@ describe('UserService (e2e)', () => {
       const dbUser = await prismaService.users.findUnique({
         where: { id: createdUser.id },
       });
+      expect(dbUser).toBeDefined();
       const isNewPasswordValid = await bcrypt.compare(
         'newpassword123',
-        dbUser.password_hash,
+        dbUser?.password_hash || '',
       );
       expect(isNewPasswordValid).toBe(true);
     });

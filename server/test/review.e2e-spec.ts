@@ -438,12 +438,13 @@ describe('ReviewService (e2e)', () => {
       const result = await reviewService.findAll();
       const foundReview = result.find((r) => r.id === review.id);
 
-      expect(foundReview.users).toBeDefined();
-      expect(foundReview.users.id).toBe(user.id);
-      expect(foundReview.users.username).toBe(user.username);
-      expect(foundReview.games).toBeDefined();
-      expect(foundReview.games.id).toBe(game.id);
-      expect(foundReview.games.title).toBe(game.title);
+      expect(foundReview).toBeDefined();
+      expect(foundReview?.users).toBeDefined();
+      expect(foundReview?.users.id).toBe(user.id);
+      expect(foundReview?.users.username).toBe(user.username);
+      expect(foundReview?.games).toBeDefined();
+      expect(foundReview?.games.id).toBe(game.id);
+      expect(foundReview?.games.title).toBe(game.title);
     });
   });
 
