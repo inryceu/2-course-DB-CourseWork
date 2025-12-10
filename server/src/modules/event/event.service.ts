@@ -31,13 +31,20 @@ export class EventService {
         throw new BadRequestException('End date must be after start date');
       }
 
+      let prismaType: ev_type;
+      if (createEventDto.type === 'free weekend') {
+        prismaType = ev_type.free_weekend;
+      } else {
+        prismaType = createEventDto.type as ev_type;
+      }
+
       const event = await tx.events.create({
         data: {
           game_id: createEventDto.game_id,
           discount: createEventDto.discount,
           start_date: startDate,
           end_date: endDate,
-          type: createEventDto.type as ev_type,
+          type: prismaType,
         },
         include: {
           games: {
@@ -185,7 +192,13 @@ export class EventService {
         updateData.start_date = new Date(updateEventDto.start_date);
       if (updateEventDto.end_date)
         updateData.end_date = new Date(updateEventDto.end_date);
-      if (updateEventDto.type) updateData.type = updateEventDto.type;
+      if (updateEventDto.type) {
+        if (updateEventDto.type === 'free weekend') {
+          updateData.type = ev_type.free_weekend;
+        } else {
+          updateData.type = updateEventDto.type as ev_type;
+        }
+      }
 
       const event = await tx.events.update({
         where: { id },

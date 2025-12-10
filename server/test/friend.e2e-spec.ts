@@ -279,7 +279,7 @@ describe('FriendService (e2e)', () => {
       try {
         await friendService.create(createFriendDto);
         fail('Should have thrown an error');
-      } catch (error) {
+      } catch (error: any) {
         const friendships = await prismaService.friends.findMany({
           where: {
             user_id: user1.id,
@@ -674,7 +674,7 @@ describe('FriendService (e2e)', () => {
           },
         });
         expect(friendship?.status).toBe('accepted');
-      } catch (error) {
+      } catch (error: any) {
         const friendship = await prismaService.friends.findUnique({
           where: {
             user_id_friend_id: {
@@ -757,7 +757,7 @@ describe('FriendService (e2e)', () => {
           },
         });
         expect(friendship).toBeNull();
-      } catch (error) {
+      } catch (error: any) {
         const friendship = await prismaService.friends.findUnique({
           where: {
             user_id_friend_id: {

@@ -304,9 +304,9 @@ describe('GameService (e2e)', () => {
     });
 
     it('should return games with pagination', async () => {
-      const game1 = await createTestGame('Pagination Game 1');
-      const game2 = await createTestGame('Pagination Game 2');
-      const game3 = await createTestGame('Pagination Game 3');
+      await createTestGame('Pagination Game 1');
+      await createTestGame('Pagination Game 2');
+      await createTestGame('Pagination Game 3');
 
       const result = await gameService.findAll(0, 2);
       expect(result.length).toBe(2);
