@@ -529,4 +529,490 @@ describe('AnalyticalQueriesService', () => {
       expect(result[0].averageAmountPerUser).toBe(0);
     });
   });
+
+  describe('getGenrePopularityByAge', () => {
+    it('should return genre popularity grouped by age groups in correct order', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 20 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+              {
+                tags: { id: 2, tag_name: 'RPG' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 25 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 3,
+          users: { age: 15 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 3, tag_name: 'Sports' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(mockPrismaService.libraries.findMany).toHaveBeenCalledWith({
+        where: {
+          ownership: 'purchased',
+        },
+        include: {
+          users: {
+            select: {
+              age: true,
+            },
+          },
+          games: {
+            include: {
+              game_tag_connection: {
+                include: {
+                  tags: {
+                    select: {
+                      id: true,
+                      tag_name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      expect(result).toHaveLength(3);
+      expect(result[0].ageGroup).toBe('13-17');
+      expect(result[1].ageGroup).toBe('18-24');
+      expect(result[2].ageGroup).toBe('25-34');
+    });
+
+    it('should calculate tag statistics correctly for each age group', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 22 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+              {
+                tags: { id: 2, tag_name: 'RPG' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 22 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].ageGroup).toBe('18-24');
+      expect(result[0].totalTags).toBe(2);
+      expect(result[0].totalOccurrences).toBe(3);
+
+      const actionTag = result[0].tags.find((t) => t.tagName === 'Action');
+      expect(actionTag).toBeDefined();
+      expect(actionTag?.totalOccurrences).toBe(2);
+      expect(actionTag?.uniqueUsers).toBe(2);
+      expect(actionTag?.averageOccurrencesPerUser).toBe(1.0);
+
+      const rpgTag = result[0].tags.find((t) => t.tagName === 'RPG');
+      expect(rpgTag).toBeDefined();
+      expect(rpgTag?.totalOccurrences).toBe(1);
+      expect(rpgTag?.uniqueUsers).toBe(1);
+      expect(rpgTag?.averageOccurrencesPerUser).toBe(1.0);
+    });
+
+    it('should sort tags by totalOccurrences descending', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 30 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 30 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 2, tag_name: 'RPG' },
+              },
+              {
+                tags: { id: 2, tag_name: 'RPG' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 3,
+          users: { age: 30 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 3, tag_name: 'Sports' },
+              },
+              {
+                tags: { id: 3, tag_name: 'Sports' },
+              },
+              {
+                tags: { id: 3, tag_name: 'Sports' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result[0].tags[0].tagName).toBe('Sports');
+      expect(result[0].tags[0].totalOccurrences).toBe(3);
+      expect(result[0].tags[1].tagName).toBe('RPG');
+      expect(result[0].tags[1].totalOccurrences).toBe(2);
+      expect(result[0].tags[2].tagName).toBe('Action');
+      expect(result[0].tags[2].totalOccurrences).toBe(1);
+    });
+
+    it('should handle multiple users with same tag correctly', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 28 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 28 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result[0].tags[0].tagName).toBe('Action');
+      expect(result[0].tags[0].totalOccurrences).toBe(3);
+      expect(result[0].tags[0].uniqueUsers).toBe(2);
+      expect(result[0].tags[0].averageOccurrencesPerUser).toBe(1.5);
+    });
+
+    it('should return empty array when no purchased libraries exist', async () => {
+      mockPrismaService.libraries.findMany.mockResolvedValue([]);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle all age groups correctly', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 15 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 20 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 2, tag_name: 'RPG' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 3,
+          users: { age: 28 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 3, tag_name: 'Strategy' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 4,
+          users: { age: 38 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 4, tag_name: 'Puzzle' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 5,
+          users: { age: 50 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 5, tag_name: 'Simulation' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 6,
+          users: { age: 10 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 6, tag_name: 'Unknown' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result).toHaveLength(6);
+      expect(result[0].ageGroup).toBe('13-17');
+      expect(result[1].ageGroup).toBe('18-24');
+      expect(result[2].ageGroup).toBe('25-34');
+      expect(result[3].ageGroup).toBe('35-44');
+      expect(result[4].ageGroup).toBe('45+');
+      expect(result[5].ageGroup).toBe('unknown');
+    });
+
+    it('should handle games without tags', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 25 },
+          games: {
+            game_tag_connection: [],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 25 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].ageGroup).toBe('25-34');
+      expect(result[0].totalTags).toBe(1);
+      expect(result[0].totalOccurrences).toBe(1);
+    });
+
+    it('should calculate averageOccurrencesPerUser correctly', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 30 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 30 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result[0].tags[0].totalOccurrences).toBe(4);
+      expect(result[0].tags[0].uniqueUsers).toBe(2);
+      expect(result[0].tags[0].averageOccurrencesPerUser).toBe(2.0);
+    });
+
+    it('should handle same user with multiple games having same tag', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 35 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 1,
+          users: { age: 35 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 1,
+          users: { age: 35 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result[0].tags[0].totalOccurrences).toBe(3);
+      expect(result[0].tags[0].uniqueUsers).toBe(1);
+      expect(result[0].tags[0].averageOccurrencesPerUser).toBe(3.0);
+    });
+
+    it('should round averageOccurrencesPerUser to 2 decimal places', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { age: 40 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 2,
+          users: { age: 40 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+        {
+          user_id: 3,
+          users: { age: 40 },
+          games: {
+            game_tag_connection: [
+              {
+                tags: { id: 1, tag_name: 'Action' },
+              },
+            ],
+          },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getGenrePopularityByAge();
+
+      expect(result[0].tags[0].totalOccurrences).toBe(4);
+      expect(result[0].tags[0].uniqueUsers).toBe(3);
+      expect(result[0].tags[0].averageOccurrencesPerUser).toBe(1.33);
+    });
+  });
 });
