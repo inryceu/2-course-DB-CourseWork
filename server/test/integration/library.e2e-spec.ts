@@ -455,12 +455,12 @@ describe('LibraryService (e2e)', () => {
       const foundLibrary = result.find((l) => l.id === library.id);
 
       expect(foundLibrary).toBeDefined();
-      expect(foundLibrary?.users).toBeDefined();
-      expect(foundLibrary?.users.id).toBe(user.id);
-      expect(foundLibrary?.users.username).toBe(user.username);
-      expect(foundLibrary?.games).toBeDefined();
-      expect(foundLibrary?.games.id).toBe(game.id);
-      expect(foundLibrary?.games.title).toBe(game.title);
+      expect(foundLibrary!.users).toBeDefined();
+      expect(foundLibrary!.users.id).toBe(user.id);
+      expect(foundLibrary!.users.username).toBe(user.username);
+      expect(foundLibrary!.games).toBeDefined();
+      expect(foundLibrary!.games.id).toBe(game.id);
+      expect(foundLibrary!.games.title).toBe(game.title);
     });
   });
 

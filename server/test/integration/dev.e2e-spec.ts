@@ -750,7 +750,7 @@ describe('DevService (e2e)', () => {
         const updatedDev = await prismaService.devs.findUnique({
           where: { id: dev2.id },
         });
-        expect(updatedDev?.dev_name).toBe(dev2.dev_name);
+        expect(updatedDev!.dev_name).toBe(dev2.dev_name);
       }
     });
   });

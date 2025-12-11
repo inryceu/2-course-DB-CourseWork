@@ -692,7 +692,7 @@ describe('FriendService (e2e)', () => {
             },
           },
         });
-        expect(friendship?.status).toBe('accepted');
+        expect(friendship!.status).toBe('accepted');
       } catch (error: any) {
         const friendship = await prismaService.friends.findUnique({
           where: {
@@ -702,7 +702,7 @@ describe('FriendService (e2e)', () => {
             },
           },
         });
-        expect(friendship?.status).toBe('pending');
+        expect(friendship!.status).toBe('pending');
       }
     });
   });

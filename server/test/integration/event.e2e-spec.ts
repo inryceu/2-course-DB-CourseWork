@@ -917,7 +917,7 @@ describe('EventService (e2e)', () => {
         const updatedEvent = await prismaService.events.findUnique({
           where: { id: event.id },
         });
-        expect(updatedEvent?.discount).toBeDefined();
+        expect(updatedEvent!.discount).toBeDefined();
       }
     });
   });
