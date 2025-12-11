@@ -9,6 +9,9 @@ describe('AnalyticalQueriesService', () => {
     games: {
       findMany: jest.fn(),
     },
+    libraries: {
+      findMany: jest.fn(),
+    },
     user_achieve_connection: {
       count: jest.fn(),
     },
@@ -255,6 +258,275 @@ describe('AnalyticalQueriesService', () => {
       expect(result[0].unlockPercentage).toBe(0.0);
       expect(result[1].gameId).toBe(1);
       expect(result[1].unlockPercentage).toBe(100.0);
+    });
+  });
+
+  describe('getRegionalSalesPotential', () => {
+    it('should return regional sales potential sorted by total amount descending', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '29.99' },
+        },
+        {
+          user_id: 2,
+          users: { region: 'US' },
+          games: { price: '19.99' },
+        },
+        {
+          user_id: 3,
+          users: { region: 'EU' },
+          games: { price: '49.99' },
+        },
+        {
+          user_id: 4,
+          users: { region: 'EU' },
+          games: { price: '9.99' },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(mockPrismaService.libraries.findMany).toHaveBeenCalledWith({
+        where: {
+          ownership: 'wishlist',
+        },
+        include: {
+          users: {
+            select: {
+              region: true,
+            },
+          },
+          games: {
+            select: {
+              price: true,
+            },
+          },
+        },
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result[0].region).toBe('EU');
+      expect(result[0].totalAmount).toBe(59.98);
+      expect(result[0].totalGames).toBe(2);
+      expect(result[0].uniqueUsers).toBe(2);
+      expect(result[0].averageAmountPerUser).toBe(29.99);
+
+      expect(result[1].region).toBe('US');
+      expect(result[1].totalAmount).toBe(49.98);
+      expect(result[1].totalGames).toBe(2);
+      expect(result[1].uniqueUsers).toBe(2);
+      expect(result[1].averageAmountPerUser).toBe(24.99);
+    });
+
+    it('should handle games with null prices', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '29.99' },
+        },
+        {
+          user_id: 2,
+          users: { region: 'US' },
+          games: { price: null },
+        },
+        {
+          user_id: 3,
+          users: { region: 'US' },
+          games: { price: '19.99' },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].region).toBe('US');
+      expect(result[0].totalAmount).toBe(49.98);
+      expect(result[0].totalGames).toBe(3);
+      expect(result[0].uniqueUsers).toBe(3);
+      expect(result[0].averageAmountPerUser).toBe(16.66);
+    });
+
+    it('should calculate unique users correctly when same user has multiple games', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '29.99' },
+        },
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '19.99' },
+        },
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '9.99' },
+        },
+        {
+          user_id: 2,
+          users: { region: 'US' },
+          games: { price: '39.99' },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].region).toBe('US');
+      expect(result[0].totalAmount).toBe(99.96);
+      expect(result[0].totalGames).toBe(4);
+      expect(result[0].uniqueUsers).toBe(2);
+      expect(result[0].averageAmountPerUser).toBe(49.98);
+    });
+
+    it('should return empty array when no wishlist libraries exist', async () => {
+      mockPrismaService.libraries.findMany.mockResolvedValue([]);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle single region with single user', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'JP' },
+          games: { price: '59.99' },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].region).toBe('JP');
+      expect(result[0].totalAmount).toBe(59.99);
+      expect(result[0].totalGames).toBe(1);
+      expect(result[0].uniqueUsers).toBe(1);
+      expect(result[0].averageAmountPerUser).toBe(59.99);
+    });
+
+    it('should handle multiple regions with varying user counts', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '29.99' },
+        },
+        {
+          user_id: 2,
+          users: { region: 'US' },
+          games: { price: '39.99' },
+        },
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '19.99' },
+        },
+        {
+          user_id: 3,
+          users: { region: 'EU' },
+          games: { price: '49.99' },
+        },
+        {
+          user_id: 4,
+          users: { region: 'AS' },
+          games: { price: '9.99' },
+        },
+        {
+          user_id: 5,
+          users: { region: 'AS' },
+          games: { price: '14.99' },
+        },
+        {
+          user_id: 6,
+          users: { region: 'AS' },
+          games: { price: '24.99' },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result).toHaveLength(3);
+      expect(result[0].region).toBe('US');
+      expect(result[0].totalAmount).toBe(89.97);
+      expect(result[0].totalGames).toBe(3);
+      expect(result[0].uniqueUsers).toBe(2);
+      expect(result[0].averageAmountPerUser).toBe(44.99);
+
+      expect(result[1].region).toBe('AS');
+      expect(result[1].totalAmount).toBe(49.97);
+      expect(result[1].totalGames).toBe(3);
+      expect(result[1].uniqueUsers).toBe(3);
+      expect(result[1].averageAmountPerUser).toBe(16.66);
+
+      expect(result[2].region).toBe('EU');
+      expect(result[2].totalAmount).toBe(49.99);
+      expect(result[2].totalGames).toBe(1);
+      expect(result[2].uniqueUsers).toBe(1);
+      expect(result[2].averageAmountPerUser).toBe(49.99);
+    });
+
+    it('should round totalAmount and averageAmountPerUser to 2 decimal places', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: '33.333' },
+        },
+        {
+          user_id: 2,
+          users: { region: 'US' },
+          games: { price: '44.444' },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result[0].totalAmount).toBe(77.78);
+      expect(result[0].averageAmountPerUser).toBe(38.89);
+    });
+
+    it('should handle region with all null prices', async () => {
+      const mockLibraries = [
+        {
+          user_id: 1,
+          users: { region: 'US' },
+          games: { price: null },
+        },
+        {
+          user_id: 2,
+          users: { region: 'US' },
+          games: { price: null },
+        },
+      ];
+
+      mockPrismaService.libraries.findMany.mockResolvedValue(mockLibraries);
+
+      const result = await service.getRegionalSalesPotential();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].region).toBe('US');
+      expect(result[0].totalAmount).toBe(0);
+      expect(result[0].totalGames).toBe(2);
+      expect(result[0].uniqueUsers).toBe(2);
+      expect(result[0].averageAmountPerUser).toBe(0);
     });
   });
 });
