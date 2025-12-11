@@ -11,6 +11,8 @@ import {
   CompleteGamePurchaseDto,
   OwnershipType,
 } from '../../src/modules/complex-queries/dto/complete-game-purchase.dto';
+import { CreateUserWithInitialSetupDto } from '../../src/modules/complex-queries/dto/create-user-with-initial-setup.dto';
+import * as bcrypt from 'bcrypt';
 
 describe('ComplexQueriesService', () => {
   let service: ComplexQueriesService;
@@ -20,6 +22,7 @@ describe('ComplexQueriesService', () => {
     games: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      findMany: jest.fn(),
     },
     tags: {
       findMany: jest.fn(),
@@ -30,6 +33,7 @@ describe('ComplexQueriesService', () => {
     achievements: {
       create: jest.fn(),
       findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     game_tag_connection: {
       create: jest.fn(),
@@ -42,9 +46,15 @@ describe('ComplexQueriesService', () => {
     },
     users: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      findMany: jest.fn(),
     },
     libraries: {
       findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    friends: {
       create: jest.fn(),
     },
     saves: {
@@ -1882,6 +1892,645 @@ describe('ComplexQueriesService', () => {
       const result = await service.completeGamePurchase(dtoWithMaxRating);
 
       expect(result.review.rating).toBe(5);
+    });
+  });
+
+  describe('createUserWithInitialSetup', () => {
+    const createUserWithInitialSetupDto: CreateUserWithInitialSetupDto = {
+      user: {
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123',
+        age: 25,
+        region: 'US',
+        avatar: 'https://example.com/avatar.jpg',
+      },
+      initialGameIds: [1, 2],
+      friendIds: [3, 4],
+      achievementIds: [1, 2],
+    };
+
+    it('should create user with all initial setup data', async () => {
+      const mockUser = {
+        id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        age: 25,
+        region: 'US',
+        avatar: 'https://example.com/avatar.jpg',
+      };
+
+      const mockGames = [
+        { id: 1, title: 'Game 1', cover: 'cover1.jpg' },
+        { id: 2, title: 'Game 2', cover: 'cover2.jpg' },
+      ];
+
+      const mockFriends = [
+        { id: 3, username: 'friend1', avatar: 'avatar1.jpg' },
+        { id: 4, username: 'friend2', avatar: 'avatar2.jpg' },
+      ];
+
+      const mockAchievements = [
+        { id: 1, title: 'Achievement 1' },
+        { id: 2, title: 'Achievement 2' },
+      ];
+
+      const mockResult = {
+        ...mockUser,
+        libraries: [
+          {
+            games: { id: 1, title: 'Game 1', cover: 'cover1.jpg' },
+          },
+          {
+            games: { id: 2, title: 'Game 2', cover: 'cover2.jpg' },
+          },
+        ],
+        friends_friends_user_idTousers: [
+          {
+            users_friends_friend_idTousers: {
+              id: 3,
+              username: 'friend1',
+              avatar: 'avatar1.jpg',
+            },
+          },
+          {
+            users_friends_friend_idTousers: {
+              id: 4,
+              username: 'friend2',
+              avatar: 'avatar2.jpg',
+            },
+          },
+        ],
+        user_achieve_connection: [
+          {
+            achievements: {
+              id: 1,
+              title: 'Achievement 1',
+              games: { id: 1, title: 'Game 1' },
+            },
+          },
+          {
+            achievements: {
+              id: 2,
+              title: 'Achievement 2',
+              games: { id: 1, title: 'Game 1' },
+            },
+          },
+        ],
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockUser),
+          findUnique: jest.fn().mockResolvedValue(mockResult),
+          findMany: jest.fn().mockResolvedValue(mockFriends),
+        },
+        games: {
+          findMany: jest.fn().mockResolvedValue(mockGames),
+        },
+        libraries: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        friends: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        achievements: {
+          findMany: jest.fn().mockResolvedValue(mockAchievements),
+        },
+        user_achieve_connection: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      const result = await service.createUserWithInitialSetup(
+        createUserWithInitialSetupDto,
+      );
+
+      expect(mockPrismaService.executeTransaction).toHaveBeenCalled();
+      expect(mockTx.users.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [{ username: 'testuser' }, { email: 'test@example.com' }],
+        },
+      });
+      expect(mockTx.games.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] } },
+      });
+      expect(mockTx.users.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [3, 4] } },
+      });
+      expect(mockTx.achievements.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] } },
+      });
+      expect(mockTx.users.create).toHaveBeenCalledWith({
+        data: {
+          username: 'testuser',
+          email: 'test@example.com',
+          password_hash: 'hashedPassword',
+          age: 25,
+          region: 'US',
+          avatar: 'https://example.com/avatar.jpg',
+        },
+      });
+      expect(mockTx.libraries.create).toHaveBeenCalledTimes(2);
+      expect(mockTx.friends.create).toHaveBeenCalledTimes(2);
+      expect(mockTx.user_achieve_connection.create).toHaveBeenCalledTimes(2);
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should create user with minimal fields', async () => {
+      const minimalDto: CreateUserWithInitialSetupDto = {
+        user: {
+          username: 'minimaluser',
+          email: 'minimal@example.com',
+          password: 'password123',
+          age: 20,
+          region: 'EU',
+        },
+      };
+
+      const mockUser = {
+        id: 2,
+        username: 'minimaluser',
+        email: 'minimal@example.com',
+        age: 20,
+        region: 'EU',
+      };
+
+      const mockResult = {
+        ...mockUser,
+        libraries: [],
+        friends_friends_user_idTousers: [],
+        user_achieve_connection: [],
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockUser),
+          findUnique: jest.fn().mockResolvedValue(mockResult),
+        },
+        games: {
+          findMany: jest.fn(),
+        },
+        libraries: {
+          create: jest.fn(),
+        },
+        friends: {
+          create: jest.fn(),
+        },
+        achievements: {
+          findMany: jest.fn(),
+        },
+        user_achieve_connection: {
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      const result = await service.createUserWithInitialSetup(minimalDto);
+
+      expect(mockTx.games.findMany).not.toHaveBeenCalled();
+      expect(mockTx.libraries.create).not.toHaveBeenCalled();
+      expect(mockTx.friends.create).not.toHaveBeenCalled();
+      expect(mockTx.achievements.findMany).not.toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should throw ConflictException when username already exists', async () => {
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 1,
+            username: 'testuser',
+          }),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.createUserWithInitialSetup(createUserWithInitialSetupDto),
+      ).rejects.toThrow(ConflictException);
+      expect(mockTx.users.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [{ username: 'testuser' }, { email: 'test@example.com' }],
+        },
+      });
+    });
+
+    it('should throw ConflictException when email already exists', async () => {
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 1,
+            email: 'test@example.com',
+          }),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.createUserWithInitialSetup(createUserWithInitialSetupDto),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw BadRequestException when age is less than 13', async () => {
+      const dtoWithInvalidAge: CreateUserWithInitialSetupDto = {
+        ...createUserWithInitialSetupDto,
+        user: {
+          ...createUserWithInitialSetupDto.user,
+          age: 12,
+        },
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.createUserWithInitialSetup(dtoWithInvalidAge),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when age is greater than 120', async () => {
+      const dtoWithInvalidAge: CreateUserWithInitialSetupDto = {
+        ...createUserWithInitialSetupDto,
+        user: {
+          ...createUserWithInitialSetupDto.user,
+          age: 121,
+        },
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.createUserWithInitialSetup(dtoWithInvalidAge),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when region is not 2 characters', async () => {
+      const dtoWithInvalidRegion: CreateUserWithInitialSetupDto = {
+        ...createUserWithInitialSetupDto,
+        user: {
+          ...createUserWithInitialSetupDto.user,
+          region: 'USA',
+        },
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.createUserWithInitialSetup(dtoWithInvalidRegion),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when game not found', async () => {
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        games: {
+          findMany: jest.fn().mockResolvedValue([{ id: 1 }]),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      await expect(
+        service.createUserWithInitialSetup(createUserWithInitialSetupDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when friend not found', async () => {
+      const mockGames = [
+        { id: 1, title: 'Game 1' },
+        { id: 2, title: 'Game 2' },
+      ];
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          findMany: jest.fn().mockResolvedValue([{ id: 3 }]),
+        },
+        games: {
+          findMany: jest.fn().mockResolvedValue(mockGames),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      await expect(
+        service.createUserWithInitialSetup(createUserWithInitialSetupDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when achievement not found', async () => {
+      const mockGames = [
+        { id: 1, title: 'Game 1' },
+        { id: 2, title: 'Game 2' },
+      ];
+
+      const mockFriends = [
+        { id: 3, username: 'friend1' },
+        { id: 4, username: 'friend2' },
+      ];
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          findMany: jest
+            .fn()
+            .mockResolvedValueOnce(mockFriends)
+            .mockResolvedValueOnce(mockFriends),
+        },
+        games: {
+          findMany: jest.fn().mockResolvedValue(mockGames),
+        },
+        achievements: {
+          findMany: jest.fn().mockResolvedValue([{ id: 1 }]),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      await expect(
+        service.createUserWithInitialSetup(createUserWithInitialSetupDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should create user with only initial games', async () => {
+      const dtoWithOnlyGames: CreateUserWithInitialSetupDto = {
+        ...createUserWithInitialSetupDto,
+        friendIds: undefined,
+        achievementIds: undefined,
+      };
+
+      const mockUser = {
+        id: 3,
+        username: 'testuser',
+        email: 'test@example.com',
+        age: 25,
+        region: 'US',
+      };
+
+      const mockGames = [
+        { id: 1, title: 'Game 1', cover: 'cover1.jpg' },
+        { id: 2, title: 'Game 2', cover: 'cover2.jpg' },
+      ];
+
+      const mockResult = {
+        ...mockUser,
+        libraries: [
+          { games: { id: 1, title: 'Game 1', cover: 'cover1.jpg' } },
+          { games: { id: 2, title: 'Game 2', cover: 'cover2.jpg' } },
+        ],
+        friends_friends_user_idTousers: [],
+        user_achieve_connection: [],
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockUser),
+          findUnique: jest.fn().mockResolvedValue(mockResult),
+        },
+        games: {
+          findMany: jest.fn().mockResolvedValue(mockGames),
+        },
+        libraries: {
+          create: jest.fn().mockResolvedValue({}),
+        },
+        friends: {
+          create: jest.fn(),
+        },
+        achievements: {
+          findMany: jest.fn(),
+        },
+        user_achieve_connection: {
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      const result = await service.createUserWithInitialSetup(dtoWithOnlyGames);
+
+      expect(mockTx.libraries.create).toHaveBeenCalledTimes(2);
+      expect(mockTx.friends.create).not.toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
+      expect(result.libraries).toHaveLength(2);
+    });
+
+    it('should create user with empty optional arrays', async () => {
+      const dtoWithEmptyArrays: CreateUserWithInitialSetupDto = {
+        ...createUserWithInitialSetupDto,
+        initialGameIds: [],
+        friendIds: [],
+        achievementIds: [],
+      };
+
+      const mockUser = {
+        id: 4,
+        username: 'testuser',
+        email: 'test@example.com',
+        age: 25,
+        region: 'US',
+      };
+
+      const mockResult = {
+        ...mockUser,
+        libraries: [],
+        friends_friends_user_idTousers: [],
+        user_achieve_connection: [],
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockUser),
+          findUnique: jest.fn().mockResolvedValue(mockResult),
+        },
+        games: {
+          findMany: jest.fn(),
+        },
+        libraries: {
+          create: jest.fn(),
+        },
+        friends: {
+          create: jest.fn(),
+        },
+        achievements: {
+          findMany: jest.fn(),
+        },
+        user_achieve_connection: {
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+
+      const result =
+        await service.createUserWithInitialSetup(dtoWithEmptyArrays);
+
+      expect(mockTx.games.findMany).not.toHaveBeenCalled();
+      expect(mockTx.libraries.create).not.toHaveBeenCalled();
+      expect(mockTx.friends.create).not.toHaveBeenCalled();
+      expect(mockTx.achievements.findMany).not.toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
+      expect(result).toEqual(mockResult);
+    });
+
+    it('should hash password before creating user', async () => {
+      const mockUser = {
+        id: 5,
+        username: 'testuser',
+        email: 'test@example.com',
+        age: 25,
+        region: 'US',
+      };
+
+      const mockResult = {
+        ...mockUser,
+        libraries: [],
+        friends_friends_user_idTousers: [],
+        user_achieve_connection: [],
+      };
+
+      const mockTx = {
+        users: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockUser),
+          findUnique: jest.fn().mockResolvedValue(mockResult),
+        },
+        games: {
+          findMany: jest.fn(),
+        },
+        libraries: {
+          create: jest.fn(),
+        },
+        friends: {
+          create: jest.fn(),
+        },
+        achievements: {
+          findMany: jest.fn(),
+        },
+        user_achieve_connection: {
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const hashSpy = jest
+        .spyOn(bcrypt, 'hash')
+        .mockResolvedValue('hashedPassword123');
+
+      const minimalDto: CreateUserWithInitialSetupDto = {
+        user: {
+          username: 'testuser',
+          email: 'test@example.com',
+          password: 'password123',
+          age: 25,
+          region: 'US',
+        },
+      };
+
+      await service.createUserWithInitialSetup(minimalDto);
+
+      expect(hashSpy).toHaveBeenCalledWith('password123', 10);
+      expect(mockTx.users.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          password_hash: 'hashedPassword123',
+        }),
+      });
     });
   });
 });

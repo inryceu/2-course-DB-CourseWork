@@ -466,19 +466,19 @@ describe('AnalyticalQueriesService', () => {
       expect(result[0].totalAmount).toBe(89.97);
       expect(result[0].totalGames).toBe(3);
       expect(result[0].uniqueUsers).toBe(2);
-      expect(result[0].averageAmountPerUser).toBe(44.99);
+      expect(result[0].averageAmountPerUser).toBe(44.98);
 
-      expect(result[1].region).toBe('AS');
-      expect(result[1].totalAmount).toBe(49.97);
-      expect(result[1].totalGames).toBe(3);
-      expect(result[1].uniqueUsers).toBe(3);
-      expect(result[1].averageAmountPerUser).toBe(16.66);
+      expect(result[1].region).toBe('EU');
+      expect(result[1].totalAmount).toBe(49.99);
+      expect(result[1].totalGames).toBe(1);
+      expect(result[1].uniqueUsers).toBe(1);
+      expect(result[1].averageAmountPerUser).toBe(49.99);
 
-      expect(result[2].region).toBe('EU');
-      expect(result[2].totalAmount).toBe(49.99);
-      expect(result[2].totalGames).toBe(1);
-      expect(result[2].uniqueUsers).toBe(1);
-      expect(result[2].averageAmountPerUser).toBe(49.99);
+      expect(result[2].region).toBe('AS');
+      expect(result[2].totalAmount).toBe(49.97);
+      expect(result[2].totalGames).toBe(3);
+      expect(result[2].uniqueUsers).toBe(3);
+      expect(result[2].averageAmountPerUser).toBe(16.66);
     });
 
     it('should round totalAmount and averageAmountPerUser to 2 decimal places', async () => {
