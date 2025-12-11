@@ -1,8 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ComplexQueriesService } from '../../src/modules/complex-queries/complex-queries.service';
 import { PrismaService } from '../../src/prisma/prisma.service';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateCompleteGameDto } from '../../src/modules/complex-queries/dto/create-complete-game.dto';
+import {
+  CompleteGamePurchaseDto,
+  OwnershipType,
+} from '../../src/modules/complex-queries/dto/complete-game-purchase.dto';
 
 describe('ComplexQueriesService', () => {
   let service: ComplexQueriesService;
@@ -21,6 +29,7 @@ describe('ComplexQueriesService', () => {
     },
     achievements: {
       create: jest.fn(),
+      findFirst: jest.fn(),
     },
     game_tag_connection: {
       create: jest.fn(),
@@ -29,6 +38,25 @@ describe('ComplexQueriesService', () => {
       create: jest.fn(),
     },
     game_news: {
+      create: jest.fn(),
+    },
+    users: {
+      findUnique: jest.fn(),
+    },
+    libraries: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    saves: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    user_achieve_connection: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    reviews: {
+      findUnique: jest.fn(),
       create: jest.fn(),
     },
   };
@@ -724,6 +752,1136 @@ describe('ComplexQueriesService', () => {
           is_multiplayer: false,
         }),
       });
+    });
+  });
+
+  describe('completeGamePurchase', () => {
+    const completeGamePurchaseDto: CompleteGamePurchaseDto = {
+      userId: 1,
+      gameId: 1,
+      ownership: OwnershipType.purchased,
+      initialSaveData: { level: 1, progress: 0 },
+      initialReview: {
+        rating: 5,
+        content: 'Great game!',
+      },
+    };
+
+    it('should complete game purchase with all optional fields', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockSave = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        save_data: { level: 1, progress: 0 },
+      };
+      const mockAchievement = {
+        id: 1,
+        game_id: 1,
+        title: 'First Achievement',
+      };
+      const mockReview = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        rating: 5,
+        content: 'Great game!',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [mockAchievement],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockSave),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(mockAchievement),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({}),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockReview),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(
+        completeGamePurchaseDto,
+      );
+
+      expect(mockPrismaService.executeTransaction).toHaveBeenCalled();
+      expect(mockTx.users.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+      expect(mockTx.games.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+      expect(mockTx.libraries.findUnique).toHaveBeenCalledWith({
+        where: {
+          user_id_game_id: {
+            user_id: 1,
+            game_id: 1,
+          },
+        },
+      });
+      expect(mockTx.libraries.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          ownership: 'purchased',
+          hours_played: 0,
+          download_status: 'not_installed',
+        },
+      });
+      expect(mockTx.saves.findUnique).toHaveBeenCalledWith({
+        where: {
+          user_id_game_id: {
+            user_id: 1,
+            game_id: 1,
+          },
+        },
+      });
+      expect(mockTx.saves.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          save_data: { level: 1, progress: 0 },
+        },
+      });
+      expect(mockTx.achievements.findFirst).toHaveBeenCalledWith({
+        where: { game_id: 1 },
+        orderBy: { id: 'asc' },
+      });
+      expect(mockTx.user_achieve_connection.findUnique).toHaveBeenCalledWith({
+        where: {
+          user_id_achievement_id: {
+            user_id: 1,
+            achievement_id: 1,
+          },
+        },
+      });
+      expect(mockTx.user_achieve_connection.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          achievement_id: 1,
+        },
+      });
+      expect(mockTx.reviews.findUnique).toHaveBeenCalledWith({
+        where: {
+          user_id_game_id: {
+            user_id: 1,
+            game_id: 1,
+          },
+        },
+      });
+      expect(mockTx.reviews.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          rating: 5,
+          content: 'Great game!',
+        },
+      });
+      expect(result.library).toEqual(mockLibrary);
+      expect(result.save).toEqual(mockSave);
+      expect(result.achievementUnlocked).toEqual(mockAchievement);
+      expect(result.review).toEqual(mockReview);
+      expect(result.game).toEqual(mockGameWithAchievements);
+    });
+
+    it('should complete game purchase with minimal fields', async () => {
+      const minimalDto: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.purchased,
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(minimalDto);
+
+      expect(mockTx.libraries.create).toHaveBeenCalled();
+      expect(mockTx.saves.findUnique).not.toHaveBeenCalled();
+      expect(mockTx.saves.create).not.toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
+      expect(mockTx.reviews.findUnique).not.toHaveBeenCalled();
+      expect(mockTx.reviews.create).not.toHaveBeenCalled();
+      expect(result.save).toBeNull();
+      expect(result.achievementUnlocked).toBeNull();
+      expect(result.review).toBeNull();
+    });
+
+    it('should throw NotFoundException when user not found', async () => {
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.completeGamePurchase(completeGamePurchaseDto),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockTx.users.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+    });
+
+    it('should throw NotFoundException when game not found', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.completeGamePurchase(completeGamePurchaseDto),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockTx.games.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+    });
+
+    it('should throw ConflictException when user already owns the game', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const existingLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest.fn().mockResolvedValue(mockGame),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(existingLibrary),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.completeGamePurchase(completeGamePurchaseDto),
+      ).rejects.toThrow(ConflictException);
+      expect(mockTx.libraries.findUnique).toHaveBeenCalledWith({
+        where: {
+          user_id_game_id: {
+            user_id: 1,
+            game_id: 1,
+          },
+        },
+      });
+    });
+
+    it('should throw BadRequestException when rating is less than 1', async () => {
+      const dtoWithInvalidRating = {
+        ...completeGamePurchaseDto,
+        initialReview: {
+          rating: 0,
+          content: 'Test',
+        },
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest.fn().mockResolvedValue(mockGame),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.completeGamePurchase(dtoWithInvalidRating),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when rating is greater than 5', async () => {
+      const dtoWithInvalidRating = {
+        ...completeGamePurchaseDto,
+        initialReview: {
+          rating: 6,
+          content: 'Test',
+        },
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest.fn().mockResolvedValue(mockGame),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      await expect(
+        service.completeGamePurchase(dtoWithInvalidRating),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should not create save if save data already exists', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const existingSave = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        save_data: { level: 1, progress: 0 },
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn().mockResolvedValue(existingSave),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(
+        completeGamePurchaseDto,
+      );
+
+      expect(mockTx.saves.findUnique).toHaveBeenCalled();
+      expect(mockTx.saves.create).not.toHaveBeenCalled();
+      expect(result.save).toBeNull();
+    });
+
+    it('should not create achievement unlock if already unlocked', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockAchievement = {
+        id: 1,
+        game_id: 1,
+        title: 'First Achievement',
+      };
+      const existingUnlock = {
+        user_id: 1,
+        achievement_id: 1,
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [mockAchievement],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(mockAchievement),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn().mockResolvedValue(existingUnlock),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(
+        completeGamePurchaseDto,
+      );
+
+      expect(mockTx.user_achieve_connection.findUnique).toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
+      expect(result.achievementUnlocked).toBeNull();
+    });
+
+    it('should not create review if review already exists', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const existingReview = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        rating: 5,
+        content: 'Great game!',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(existingReview),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(
+        completeGamePurchaseDto,
+      );
+
+      expect(mockTx.reviews.findUnique).toHaveBeenCalled();
+      expect(mockTx.reviews.create).not.toHaveBeenCalled();
+      expect(result.review).toBeNull();
+    });
+
+    it('should handle game without achievements', async () => {
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(
+        completeGamePurchaseDto,
+      );
+
+      expect(mockTx.achievements.findFirst).toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.findUnique).not.toHaveBeenCalled();
+      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
+      expect(result.achievementUnlocked).toBeNull();
+    });
+
+    it('should complete game purchase with rented ownership type', async () => {
+      const dtoWithRented: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.rented,
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'rented',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(dtoWithRented);
+
+      expect(mockTx.libraries.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          ownership: 'rented',
+          hours_played: 0,
+          download_status: 'not_installed',
+        },
+      });
+      expect(result.library.ownership).toBe('rented');
+    });
+
+    it('should complete game purchase with wishlist ownership type', async () => {
+      const dtoWithWishlist: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.wishlist,
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'wishlist',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(dtoWithWishlist);
+
+      expect(mockTx.libraries.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          ownership: 'wishlist',
+          hours_played: 0,
+          download_status: 'not_installed',
+        },
+      });
+      expect(result.library.ownership).toBe('wishlist');
+    });
+
+    it('should complete game purchase with only save data', async () => {
+      const dtoWithOnlySave: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.purchased,
+        initialSaveData: { level: 1, progress: 50 },
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockSave = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        save_data: { level: 1, progress: 50 },
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockSave),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(dtoWithOnlySave);
+
+      expect(mockTx.saves.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          save_data: { level: 1, progress: 50 },
+        },
+      });
+      expect(mockTx.reviews.findUnique).not.toHaveBeenCalled();
+      expect(mockTx.reviews.create).not.toHaveBeenCalled();
+      expect(result.save).toEqual(mockSave);
+      expect(result.review).toBeNull();
+    });
+
+    it('should complete game purchase with only review', async () => {
+      const dtoWithOnlyReview: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.purchased,
+        initialReview: {
+          rating: 4,
+          content: 'Good game',
+        },
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockReview = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        rating: 4,
+        content: 'Good game',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockReview),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(dtoWithOnlyReview);
+
+      expect(mockTx.saves.findUnique).not.toHaveBeenCalled();
+      expect(mockTx.saves.create).not.toHaveBeenCalled();
+      expect(mockTx.reviews.create).toHaveBeenCalledWith({
+        data: {
+          user_id: 1,
+          game_id: 1,
+          rating: 4,
+          content: 'Good game',
+        },
+      });
+      expect(result.save).toBeNull();
+      expect(result.review).toEqual(mockReview);
+    });
+
+    it('should accept rating value of 1', async () => {
+      const dtoWithMinRating: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.purchased,
+        initialReview: {
+          rating: 1,
+          content: 'Poor game',
+        },
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockReview = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        rating: 1,
+        content: 'Poor game',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockReview),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(dtoWithMinRating);
+
+      expect(result.review.rating).toBe(1);
+    });
+
+    it('should accept rating value of 5', async () => {
+      const dtoWithMaxRating: CompleteGamePurchaseDto = {
+        userId: 1,
+        gameId: 1,
+        ownership: OwnershipType.purchased,
+        initialReview: {
+          rating: 5,
+          content: 'Excellent game',
+        },
+      };
+
+      const mockUser = { id: 1, username: 'testuser' };
+      const mockGame = { id: 1, title: 'Test Game' };
+      const mockLibrary = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        ownership: 'purchased',
+        hours_played: 0,
+        download_status: 'not_installed',
+      };
+      const mockReview = {
+        id: 1,
+        user_id: 1,
+        game_id: 1,
+        rating: 5,
+        content: 'Excellent game',
+      };
+      const mockGameWithAchievements = {
+        ...mockGame,
+        achievements: [],
+      };
+
+      const mockTx = {
+        users: {
+          findUnique: jest.fn().mockResolvedValue(mockUser),
+        },
+        games: {
+          findUnique: jest
+            .fn()
+            .mockResolvedValueOnce(mockGame)
+            .mockResolvedValueOnce(mockGameWithAchievements),
+        },
+        libraries: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockLibrary),
+        },
+        saves: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        achievements: {
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        user_achieve_connection: {
+          findUnique: jest.fn(),
+          create: jest.fn(),
+        },
+        reviews: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockReview),
+        },
+      };
+
+      mockPrismaService.executeTransaction.mockImplementation(
+        async (callback: any) => {
+          return callback(mockTx);
+        },
+      );
+
+      const result = await service.completeGamePurchase(dtoWithMaxRating);
+
+      expect(result.review.rating).toBe(5);
     });
   });
 });
