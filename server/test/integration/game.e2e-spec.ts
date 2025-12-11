@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { GameService } from '../src/modules/game/game.service';
-import { GameModule } from '../src/modules/game/game.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { GameService } from '../../src/modules/game/game.service';
+import { GameModule } from '../../src/modules/game/game.module';
 import {
   ConflictException,
   NotFoundException,
@@ -29,6 +29,25 @@ describe('GameService (e2e)', () => {
 
     gameService = moduleFixture.get<GameService>(GameService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

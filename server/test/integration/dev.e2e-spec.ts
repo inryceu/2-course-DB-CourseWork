@@ -1,10 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { DevService } from '../src/modules/dev/dev.service';
-import { DevModule } from '../src/modules/dev/dev.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { DevService } from '../../src/modules/dev/dev.service';
+import { DevModule } from '../../src/modules/dev/dev.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { CreateDevDto, DevType } from '../src/modules/dev/dto/create-dev.dto';
+import {
+  CreateDevDto,
+  DevType,
+} from '../../src/modules/dev/dto/create-dev.dto';
 
 jest.setTimeout(30000);
 
@@ -25,6 +28,25 @@ describe('DevService (e2e)', () => {
 
     devService = moduleFixture.get<DevService>(DevService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

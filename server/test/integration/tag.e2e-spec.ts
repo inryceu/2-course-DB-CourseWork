@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { TagService } from '../src/modules/tag/tag.service';
-import { TagModule } from '../src/modules/tag/tag.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { TagService } from '../../src/modules/tag/tag.service';
+import { TagModule } from '../../src/modules/tag/tag.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
 jest.setTimeout(30000);
@@ -24,6 +24,25 @@ describe('TagService (e2e)', () => {
 
     tagService = moduleFixture.get<TagService>(TagService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

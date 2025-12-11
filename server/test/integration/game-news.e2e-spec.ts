@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { GameNewsService } from '../src/modules/game-news/game-news.service';
-import { GameNewsModule } from '../src/modules/game-news/game-news.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { GameNewsService } from '../../src/modules/game-news/game-news.service';
+import { GameNewsModule } from '../../src/modules/game-news/game-news.module';
 import { NotFoundException } from '@nestjs/common';
 
 jest.setTimeout(30000);
@@ -24,6 +24,25 @@ describe('GameNewsService (e2e)', () => {
 
     gameNewsService = moduleFixture.get<GameNewsService>(GameNewsService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

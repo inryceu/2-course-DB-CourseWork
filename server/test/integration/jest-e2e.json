@@ -6,8 +6,11 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "setupFilesAfterEnv": ["<rootDir>/setup.ts"],
-  "globalSetup": "<rootDir>/global-setup.ts",
-  "globalTeardown": "<rootDir>/global-teardown.ts"
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/../src/$1"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/integration/setup.ts"],
+  "globalSetup": "<rootDir>/integration/global-setup.ts",
+  "globalTeardown": "<rootDir>/integration/global-teardown.ts"
 }
 

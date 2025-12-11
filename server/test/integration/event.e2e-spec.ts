@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { EventService } from '../src/modules/event/event.service';
-import { EventModule } from '../src/modules/event/event.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { EventService } from '../../src/modules/event/event.service';
+import { EventModule } from '../../src/modules/event/event.module';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import {
   CreateEventDto,
   EvType,
-} from '../src/modules/event/dto/create-event.dto';
+} from '../../src/modules/event/dto/create-event.dto';
 import { ev_type } from '@prisma/client';
 
 jest.setTimeout(30000);
@@ -29,6 +29,25 @@ describe('EventService (e2e)', () => {
 
     eventService = moduleFixture.get<EventService>(EventService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { ReviewService } from '../src/modules/review/review.service';
-import { ReviewModule } from '../src/modules/review/review.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { ReviewService } from '../../src/modules/review/review.service';
+import { ReviewModule } from '../../src/modules/review/review.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -26,6 +26,25 @@ describe('ReviewService (e2e)', () => {
 
     reviewService = moduleFixture.get<ReviewService>(ReviewService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

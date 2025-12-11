@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { PrismaService } from '../../src/prisma/prisma.service';
 import {
   OwnType,
   DownloadType,
-} from '../src/modules/library/dto/create-library.dto';
-import { LibraryService } from '../src/modules/library/library.service';
-import { LibraryModule } from '../src/modules/library/library.module';
+} from '../../src/modules/library/dto/create-library.dto';
+import { LibraryService } from '../../src/modules/library/library.service';
+import { LibraryModule } from '../../src/modules/library/library.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -30,6 +30,25 @@ describe('LibraryService (e2e)', () => {
 
     libraryService = moduleFixture.get<LibraryService>(LibraryService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

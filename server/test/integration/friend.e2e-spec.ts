@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { FriendService } from '../src/modules/friend/friend.service';
-import { FriendModule } from '../src/modules/friend/friend.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { FriendService } from '../../src/modules/friend/friend.service';
+import { FriendModule } from '../../src/modules/friend/friend.module';
 import {
   ConflictException,
   NotFoundException,
@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 import {
   CreateFriendDto,
   FrStatus,
-} from '../src/modules/friend/dto/create-friend.dto';
+} from '../../src/modules/friend/dto/create-friend.dto';
 
 jest.setTimeout(30000);
 
@@ -32,6 +32,25 @@ describe('FriendService (e2e)', () => {
 
     friendService = moduleFixture.get<FriendService>(FriendService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {

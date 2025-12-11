@@ -94,7 +94,7 @@ export class ComplexQueriesService {
         ),
       );
 
-      const news = await tx.game_news.create({
+      await tx.game_news.create({
         data: {
           game_id: game.id,
           title: dto.initialNews.title,
