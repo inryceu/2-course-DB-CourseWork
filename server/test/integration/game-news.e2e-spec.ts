@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { GameNewsService } from '../src/modules/game-news/game-news.service';
-import { GameNewsModule } from '../src/modules/game-news/game-news.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { GameNewsService } from '../../src/modules/game-news/game-news.service';
+import { GameNewsModule } from '../../src/modules/game-news/game-news.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { NotFoundException } from '@nestjs/common';
 
 jest.setTimeout(30000);
@@ -16,7 +17,7 @@ describe('GameNewsService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [GameNewsModule],
+      imports: [DatabaseConfigModule, GameNewsModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -24,6 +25,25 @@ describe('GameNewsService (e2e)', () => {
 
     gameNewsService = moduleFixture.get<GameNewsService>(GameNewsService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {
@@ -313,9 +333,10 @@ describe('GameNewsService (e2e)', () => {
       const result = await gameNewsService.findAll();
       const foundNews = result.find((n) => n.id === gameNews.id);
 
-      expect(foundNews.games).toBeDefined();
-      expect(foundNews.games.id).toBe(game.id);
-      expect(foundNews.games.title).toBe(game.title);
+      expect(foundNews).toBeDefined();
+      expect(foundNews?.games).toBeDefined();
+      expect(foundNews?.games.id).toBe(game.id);
+      expect(foundNews?.games.title).toBe(game.title);
     });
   });
 

@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { GameService } from '../src/modules/game/game.service';
-import { GameModule } from '../src/modules/game/game.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { GameService } from '../../src/modules/game/game.service';
+import { GameModule } from '../../src/modules/game/game.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import {
   ConflictException,
   NotFoundException,
@@ -21,7 +22,7 @@ describe('GameService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [GameModule],
+      imports: [DatabaseConfigModule, GameModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -29,6 +30,25 @@ describe('GameService (e2e)', () => {
 
     gameService = moduleFixture.get<GameService>(GameService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {
@@ -106,10 +126,14 @@ describe('GameService (e2e)', () => {
   }
 
   async function createTestTag(tagName: string) {
-    const uniqueTagName = `g_${tagName}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const sanitizedName = tagName.toLowerCase().replace(/[^a-z]/g, '');
+    const uniqueId =
+      Date.now().toString(36).replace(/\d/g, '') +
+      Math.random().toString(36).substring(2, 5).replace(/\d/g, '');
+    const uniqueTagName = `${sanitizedName}${uniqueId}`.substring(0, 25);
     const tag = await prismaService.tags.create({
       data: {
-        tag_name: uniqueTagName.substring(0, 25),
+        tag_name: uniqueTagName,
       },
     });
     createdTagIds.push(tag.id);

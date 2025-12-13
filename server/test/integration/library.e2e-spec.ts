@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
+import { PrismaService } from '../../src/prisma/prisma.service';
 import {
   OwnType,
   DownloadType,
-} from '../src/modules/library/dto/create-library.dto';
-import { LibraryService } from '../src/modules/library/library.service';
-import { LibraryModule } from '../src/modules/library/library.module';
+} from '../../src/modules/library/dto/create-library.dto';
+import { LibraryService } from '../../src/modules/library/library.service';
+import { LibraryModule } from '../../src/modules/library/library.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -22,7 +23,7 @@ describe('LibraryService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [LibraryModule],
+      imports: [DatabaseConfigModule, LibraryModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -30,6 +31,25 @@ describe('LibraryService (e2e)', () => {
 
     libraryService = moduleFixture.get<LibraryService>(LibraryService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {
@@ -435,12 +455,13 @@ describe('LibraryService (e2e)', () => {
       const result = await libraryService.findAll();
       const foundLibrary = result.find((l) => l.id === library.id);
 
-      expect(foundLibrary.users).toBeDefined();
-      expect(foundLibrary.users.id).toBe(user.id);
-      expect(foundLibrary.users.username).toBe(user.username);
-      expect(foundLibrary.games).toBeDefined();
-      expect(foundLibrary.games.id).toBe(game.id);
-      expect(foundLibrary.games.title).toBe(game.title);
+      expect(foundLibrary).toBeDefined();
+      expect(foundLibrary?.users).toBeDefined();
+      expect(foundLibrary?.users.id).toBe(user.id);
+      expect(foundLibrary?.users.username).toBe(user.username);
+      expect(foundLibrary?.games).toBeDefined();
+      expect(foundLibrary?.games.id).toBe(game.id);
+      expect(foundLibrary?.games.title).toBe(game.title);
     });
   });
 

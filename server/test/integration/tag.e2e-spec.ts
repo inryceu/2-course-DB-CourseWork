@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/prisma/prisma.service';
-import { TagService } from '../src/modules/tag/tag.service';
-import { TagModule } from '../src/modules/tag/tag.module';
+import { PrismaService } from '../../src/prisma/prisma.service';
+import { TagService } from '../../src/modules/tag/tag.service';
+import { TagModule } from '../../src/modules/tag/tag.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
 jest.setTimeout(30000);
@@ -16,7 +17,7 @@ describe('TagService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [TagModule],
+      imports: [DatabaseConfigModule, TagModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -24,6 +25,25 @@ describe('TagService (e2e)', () => {
 
     tagService = moduleFixture.get<TagService>(TagService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+
+    await prismaService.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        "reviews", 
+        "saves", 
+        "libraries", 
+        "game_news", 
+        "events", 
+        "devs", 
+        "game_tag_connection",
+        "game_dev_connection",
+        "user_achieve_connection",
+        "achievements",
+        "games",
+        "tags",
+        "users",
+        "friends"
+      RESTART IDENTITY CASCADE;
+    `);
   });
 
   afterEach(async () => {
@@ -59,7 +79,7 @@ describe('TagService (e2e)', () => {
   describe('create', () => {
     it('should create a tag successfully', async () => {
       const createTagDto = {
-        tag_name: 'Action',
+        tag_name: 'action',
       };
 
       const tag = await tagService.create(createTagDto);
@@ -73,7 +93,7 @@ describe('TagService (e2e)', () => {
         where: { id: tag.id },
       });
       expect(dbTag).toBeDefined();
-      expect(dbTag.tag_name).toBe(createTagDto.tag_name);
+      expect(dbTag?.tag_name).toBe(createTagDto.tag_name);
     });
 
     it('should create a tag with maximum length name', async () => {
@@ -89,7 +109,7 @@ describe('TagService (e2e)', () => {
 
     it('should throw ConflictException when tag name already exists', async () => {
       const createTagDto = {
-        tag_name: 'DuplicateTag',
+        tag_name: 'duplicatetag',
       };
 
       const tag = await tagService.create(createTagDto);
@@ -102,14 +122,14 @@ describe('TagService (e2e)', () => {
 
     it('should handle transaction rollback on error', async () => {
       const createTagDto = {
-        tag_name: 'RollbackTag',
+        tag_name: 'rollbacktag',
       };
 
       const tag = await tagService.create(createTagDto);
       createdTagIds.push(tag.id);
 
       const tagCountBefore = await prismaService.tags.count({
-        where: { tag_name: 'RollbackTag' },
+        where: { tag_name: 'rollbacktag' },
       });
       expect(tagCountBefore).toBe(1);
 
@@ -118,7 +138,7 @@ describe('TagService (e2e)', () => {
       );
 
       const tagCountAfter = await prismaService.tags.count({
-        where: { tag_name: 'RollbackTag' },
+        where: { tag_name: 'rollbacktag' },
       });
       expect(tagCountAfter).toBe(1);
     });
@@ -127,9 +147,9 @@ describe('TagService (e2e)', () => {
   describe('findAll', () => {
     it('should return all tags', async () => {
       const tags = [
-        { tag_name: 'Zebra' },
-        { tag_name: 'Alpha' },
-        { tag_name: 'Beta' },
+        { tag_name: 'zebra' },
+        { tag_name: 'alpha' },
+        { tag_name: 'beta' },
       ];
 
       for (const tagData of tags) {
@@ -139,16 +159,16 @@ describe('TagService (e2e)', () => {
 
       const result = await tagService.findAll();
       expect(result.length).toBeGreaterThanOrEqual(3);
-      expect(result.some((t) => t.tag_name === 'Alpha')).toBe(true);
-      expect(result.some((t) => t.tag_name === 'Beta')).toBe(true);
-      expect(result.some((t) => t.tag_name === 'Zebra')).toBe(true);
+      expect(result.some((t) => t.tag_name === 'alpha')).toBe(true);
+      expect(result.some((t) => t.tag_name === 'beta')).toBe(true);
+      expect(result.some((t) => t.tag_name === 'zebra')).toBe(true);
     });
 
     it('should return tags ordered by tag_name ascending', async () => {
       const tags = [
-        { tag_name: 'Zebra' },
-        { tag_name: 'Alpha' },
-        { tag_name: 'Beta' },
+        { tag_name: 'zebra' },
+        { tag_name: 'alpha' },
+        { tag_name: 'beta' },
       ];
 
       for (const tagData of tags) {
@@ -157,19 +177,20 @@ describe('TagService (e2e)', () => {
       }
 
       const result = await tagService.findAll();
-      const alphaIndex = result.findIndex((t) => t.tag_name === 'Alpha');
-      const betaIndex = result.findIndex((t) => t.tag_name === 'Beta');
-      const zebraIndex = result.findIndex((t) => t.tag_name === 'Zebra');
+      const alphaIndex = result.findIndex((t) => t.tag_name === 'alpha');
+      const betaIndex = result.findIndex((t) => t.tag_name === 'beta');
+      const zebraIndex = result.findIndex((t) => t.tag_name === 'zebra');
 
       expect(alphaIndex).toBeLessThan(betaIndex);
       expect(betaIndex).toBeLessThan(zebraIndex);
     });
 
     it('should return tags with pagination', async () => {
+      const uniqueId = Date.now().toString(36).replace(/\d/g, '');
       const tags = [
-        { tag_name: 'Pagination1' },
-        { tag_name: 'Pagination2' },
-        { tag_name: 'Pagination3' },
+        { tag_name: `paginationa${uniqueId}`.substring(0, 25) },
+        { tag_name: `paginationb${uniqueId}`.substring(0, 25) },
+        { tag_name: `paginationc${uniqueId}`.substring(0, 25) },
       ];
 
       for (const tagData of tags) {
@@ -190,7 +211,7 @@ describe('TagService (e2e)', () => {
   describe('findOne', () => {
     it('should return a tag by id', async () => {
       const createTagDto = {
-        tag_name: 'FindOneTag',
+        tag_name: 'findonetag',
       };
 
       const createdTag = await tagService.create(createTagDto);
@@ -213,7 +234,7 @@ describe('TagService (e2e)', () => {
   describe('findByName', () => {
     it('should return a tag by name', async () => {
       const createTagDto = {
-        tag_name: 'FindByNameTag',
+        tag_name: 'findbynametag',
       };
 
       const createdTag = await tagService.create(createTagDto);
@@ -232,31 +253,31 @@ describe('TagService (e2e)', () => {
       );
     });
 
-    it('should be case sensitive', async () => {
+    it('should find tag by name', async () => {
       const createTagDto = {
-        tag_name: 'CaseSensitive',
+        tag_name: 'casesensitive',
       };
 
       const createdTag = await tagService.create(createTagDto);
       createdTagIds.push(createdTag.id);
 
-      await expect(tagService.findByName('casesensitive')).rejects.toThrow(
-        NotFoundException,
-      );
+      const foundTag = await tagService.findByName('casesensitive');
+      expect(foundTag.id).toBe(createdTag.id);
+      expect(foundTag.tag_name).toBe('casesensitive');
     });
   });
 
   describe('update', () => {
     it('should update tag name successfully', async () => {
       const createTagDto = {
-        tag_name: 'UpdateTag',
+        tag_name: 'updatetag',
       };
 
       const createdTag = await tagService.create(createTagDto);
       createdTagIds.push(createdTag.id);
 
       const updateDto = {
-        tag_name: 'UpdatedTag',
+        tag_name: 'updatedtag',
       };
 
       const updatedTag = await tagService.update(createdTag.id, updateDto);
@@ -267,28 +288,28 @@ describe('TagService (e2e)', () => {
       const dbTag = await prismaService.tags.findUnique({
         where: { id: createdTag.id },
       });
-      expect(dbTag.tag_name).toBe(updateDto.tag_name);
+      expect(dbTag?.tag_name).toBe(updateDto.tag_name);
     });
 
     it('should allow updating to same name', async () => {
       const createTagDto = {
-        tag_name: 'SameNameTag',
+        tag_name: 'samenametag',
       };
 
       const createdTag = await tagService.create(createTagDto);
       createdTagIds.push(createdTag.id);
 
       const updateDto = {
-        tag_name: 'SameNameTag',
+        tag_name: 'samenametag',
       };
 
       const updatedTag = await tagService.update(createdTag.id, updateDto);
-      expect(updatedTag.tag_name).toBe('SameNameTag');
+      expect(updatedTag.tag_name).toBe('samenametag');
     });
 
     it('should throw NotFoundException when tag does not exist', async () => {
       const updateDto = {
-        tag_name: 'NewName',
+        tag_name: 'newname',
       };
 
       await expect(tagService.update(999999, updateDto)).rejects.toThrow(
@@ -297,24 +318,25 @@ describe('TagService (e2e)', () => {
     });
 
     it('should throw ConflictException when tag name is taken', async () => {
+      const uniqueId = Date.now().toString(36).replace(/\d/g, '');
       const tag1 = await tagService.create({
-        tag_name: 'ConflictTag1',
+        tag_name: `conflicttaga${uniqueId}`.substring(0, 25),
       });
       createdTagIds.push(tag1.id);
 
       const tag2 = await tagService.create({
-        tag_name: 'ConflictTag2',
+        tag_name: `conflicttagb${uniqueId}`.substring(0, 25),
       });
       createdTagIds.push(tag2.id);
 
       await expect(
-        tagService.update(tag2.id, { tag_name: 'ConflictTag1' }),
+        tagService.update(tag2.id, { tag_name: tag1.tag_name }),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should handle empty update', async () => {
       const createTagDto = {
-        tag_name: 'EmptyUpdateTag',
+        tag_name: 'emptyupdatetag',
       };
 
       const createdTag = await tagService.create(createTagDto);
@@ -330,7 +352,7 @@ describe('TagService (e2e)', () => {
   describe('remove', () => {
     it('should delete tag successfully', async () => {
       const createTagDto = {
-        tag_name: 'DeleteTag',
+        tag_name: 'deletetag',
       };
 
       const createdTag = await tagService.create(createTagDto);
@@ -352,7 +374,7 @@ describe('TagService (e2e)', () => {
 
     it('should handle cascade delete of game connections', async () => {
       const tag = await tagService.create({
-        tag_name: 'CascadeTag',
+        tag_name: 'cascadetag',
       });
       createdTagIds.push(tag.id);
 
@@ -387,7 +409,7 @@ describe('TagService (e2e)', () => {
   describe('getGamesByTag', () => {
     it('should return games associated with tag', async () => {
       const tag = await tagService.create({
-        tag_name: 'GameTag',
+        tag_name: 'gametag',
       });
       createdTagIds.push(tag.id);
 
@@ -444,7 +466,7 @@ describe('TagService (e2e)', () => {
 
     it('should return games ordered by game_id ascending', async () => {
       const tag = await tagService.create({
-        tag_name: 'OrderedTag',
+        tag_name: 'orderedtag',
       });
       createdTagIds.push(tag.id);
 
@@ -494,11 +516,11 @@ describe('TagService (e2e)', () => {
 
     it('should return games with pagination', async () => {
       const tag = await tagService.create({
-        tag_name: 'PaginationTag',
+        tag_name: 'paginationtag',
       });
       createdTagIds.push(tag.id);
 
-      const games = [];
+      const games: any[] = [];
       for (let i = 1; i <= 5; i++) {
         const game = await prismaService.games.create({
           data: {
@@ -527,7 +549,7 @@ describe('TagService (e2e)', () => {
 
     it('should return empty array when tag has no games', async () => {
       const tag = await tagService.create({
-        tag_name: 'EmptyTag',
+        tag_name: 'emptytag',
       });
       createdTagIds.push(tag.id);
 

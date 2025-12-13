@@ -14,10 +14,12 @@ import { GameNewsModule } from './modules/game-news/game-news.module';
 import { FriendModule } from './modules/friend/friend.module';
 import { ComplexQueriesModule } from './modules/complex-queries/complex-queries.module';
 import { AnalyticalQueriesModule } from './modules/analytical-queries/analytical-queries.module';
+import { DatabaseConfigModule } from './config/database-config.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
   imports: [
+    DatabaseConfigModule,
     UserModule,
     GameModule,
     LibraryModule,
