@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { FriendService } from '../../src/modules/friend/friend.service';
 import { FriendModule } from '../../src/modules/friend/friend.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import {
   ConflictException,
   NotFoundException,
@@ -24,7 +25,7 @@ describe('FriendService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [FriendModule],
+      imports: [DatabaseConfigModule, FriendModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -692,7 +693,7 @@ describe('FriendService (e2e)', () => {
             },
           },
         });
-        expect(friendship!.status).toBe('accepted');
+        expect(friendship?.status).toBe('accepted');
       } catch (error: any) {
         const friendship = await prismaService.friends.findUnique({
           where: {
@@ -702,7 +703,7 @@ describe('FriendService (e2e)', () => {
             },
           },
         });
-        expect(friendship!.status).toBe('pending');
+        expect(friendship?.status).toBe('pending');
       }
     });
   });

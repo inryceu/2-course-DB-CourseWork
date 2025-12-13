@@ -1,23 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL_TEST || process.env.DATABASE_URL,
-    },
-  },
-});
-
 export default async () => {
-  const testDbUrl = process.env.DATABASE_URL_TEST || process.env.DATABASE_URL;
+  const testDbUrl = process.env.DATABASE_URL_TEST;
 
   if (!testDbUrl) {
-    throw new Error('DATABASE_URL_TEST or DATABASE_URL must be set');
+    throw new Error(
+      'DATABASE_URL_TEST must be set to prevent tests from running against production database',
+    );
   }
+
+  process.env.DATABASE_URL = testDbUrl;
 
   console.log(
     `Connecting to test database: ${testDbUrl.replace(/:[^:@]+@/, ':****@')}`,
   );
+
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: testDbUrl,
+      },
+    },
+  });
 
   try {
     await prisma.$connect();

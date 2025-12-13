@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TagService } from '../../src/modules/tag/tag.service';
 import { TagModule } from '../../src/modules/tag/tag.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
 jest.setTimeout(30000);
@@ -16,7 +17,7 @@ describe('TagService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [TagModule],
+      imports: [DatabaseConfigModule, TagModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

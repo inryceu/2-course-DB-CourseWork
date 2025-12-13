@@ -2396,7 +2396,7 @@ describe('ComplexQueriesService', () => {
       expect(mockTx.libraries.create).toHaveBeenCalledTimes(2);
       expect(mockTx.friends.create).not.toHaveBeenCalled();
       expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
-      expect(result!.libraries).toHaveLength(2);
+      expect(result?.libraries).toHaveLength(2);
     });
 
     it('should create user with empty optional arrays', async () => {

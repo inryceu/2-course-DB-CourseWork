@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { DevService } from '../../src/modules/dev/dev.service';
 import { DevModule } from '../../src/modules/dev/dev.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import {
   CreateDevDto,
@@ -20,7 +21,7 @@ describe('DevService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [DevModule],
+      imports: [DatabaseConfigModule, DevModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -750,7 +751,7 @@ describe('DevService (e2e)', () => {
         const updatedDev = await prismaService.devs.findUnique({
           where: { id: dev2.id },
         });
-        expect(updatedDev!.dev_name).toBe(dev2.dev_name);
+        expect(updatedDev?.dev_name).toBe(dev2.dev_name);
       }
     });
   });

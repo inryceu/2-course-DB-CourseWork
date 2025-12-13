@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { ReviewService } from '../../src/modules/review/review.service';
 import { ReviewModule } from '../../src/modules/review/review.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -18,7 +19,7 @@ describe('ReviewService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [ReviewModule],
+      imports: [DatabaseConfigModule, ReviewModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -458,12 +459,12 @@ describe('ReviewService (e2e)', () => {
       const foundReview = result.find((r) => r.id === review.id);
 
       expect(foundReview).toBeDefined();
-      expect(foundReview!.users).toBeDefined();
-      expect(foundReview!.users.id).toBe(user.id);
-      expect(foundReview!.users.username).toBe(user.username);
-      expect(foundReview!.games).toBeDefined();
-      expect(foundReview!.games.id).toBe(game.id);
-      expect(foundReview!.games.title).toBe(game.title);
+      expect(foundReview?.users).toBeDefined();
+      expect(foundReview?.users.id).toBe(user.id);
+      expect(foundReview?.users.username).toBe(user.username);
+      expect(foundReview?.games).toBeDefined();
+      expect(foundReview?.games.id).toBe(game.id);
+      expect(foundReview?.games.title).toBe(game.title);
     });
   });
 
