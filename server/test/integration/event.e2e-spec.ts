@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { EventService } from '../../src/modules/event/event.service';
 import { EventModule } from '../../src/modules/event/event.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import {
   CreateEventDto,
@@ -21,7 +22,7 @@ describe('EventService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [EventModule],
+      imports: [DatabaseConfigModule, EventModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -917,7 +918,7 @@ describe('EventService (e2e)', () => {
         const updatedEvent = await prismaService.events.findUnique({
           where: { id: event.id },
         });
-        expect(updatedEvent!.discount).toBeDefined();
+        expect(updatedEvent?.discount).toBeDefined();
       }
     });
   });

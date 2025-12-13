@@ -648,15 +648,15 @@ describe('AnalyticalQueriesService', () => {
 
       const actionTag = result[0].tags.find((t) => t.tagName === 'Action');
       expect(actionTag).toBeDefined();
-      expect(actionTag!.totalOccurrences).toBe(2);
-      expect(actionTag!.uniqueUsers).toBe(2);
-      expect(actionTag!.averageOccurrencesPerUser).toBe(1.0);
+      expect(actionTag?.totalOccurrences).toBe(2);
+      expect(actionTag?.uniqueUsers).toBe(2);
+      expect(actionTag?.averageOccurrencesPerUser).toBe(1.0);
 
       const rpgTag = result[0].tags.find((t) => t.tagName === 'RPG');
       expect(rpgTag).toBeDefined();
-      expect(rpgTag!.totalOccurrences).toBe(1);
-      expect(rpgTag!.uniqueUsers).toBe(1);
-      expect(rpgTag!.averageOccurrencesPerUser).toBe(1.0);
+      expect(rpgTag?.totalOccurrences).toBe(1);
+      expect(rpgTag?.uniqueUsers).toBe(1);
+      expect(rpgTag?.averageOccurrencesPerUser).toBe(1.0);
     });
 
     it('should sort tags by totalOccurrences descending', async () => {

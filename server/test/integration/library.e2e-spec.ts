@@ -7,6 +7,7 @@ import {
 } from '../../src/modules/library/dto/create-library.dto';
 import { LibraryService } from '../../src/modules/library/library.service';
 import { LibraryModule } from '../../src/modules/library/library.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -22,7 +23,7 @@ describe('LibraryService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [LibraryModule],
+      imports: [DatabaseConfigModule, LibraryModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -455,12 +456,12 @@ describe('LibraryService (e2e)', () => {
       const foundLibrary = result.find((l) => l.id === library.id);
 
       expect(foundLibrary).toBeDefined();
-      expect(foundLibrary!.users).toBeDefined();
-      expect(foundLibrary!.users.id).toBe(user.id);
-      expect(foundLibrary!.users.username).toBe(user.username);
-      expect(foundLibrary!.games).toBeDefined();
-      expect(foundLibrary!.games.id).toBe(game.id);
-      expect(foundLibrary!.games.title).toBe(game.title);
+      expect(foundLibrary?.users).toBeDefined();
+      expect(foundLibrary?.users.id).toBe(user.id);
+      expect(foundLibrary?.users.username).toBe(user.username);
+      expect(foundLibrary?.games).toBeDefined();
+      expect(foundLibrary?.games.id).toBe(game.id);
+      expect(foundLibrary?.games.title).toBe(game.title);
     });
   });
 

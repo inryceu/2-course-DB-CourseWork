@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { GameService } from '../../src/modules/game/game.service';
 import { GameModule } from '../../src/modules/game/game.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import {
   ConflictException,
   NotFoundException,
@@ -21,7 +22,7 @@ describe('GameService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [GameModule],
+      imports: [DatabaseConfigModule, GameModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { SaveService } from '../../src/modules/save/save.service';
 import { SaveModule } from '../../src/modules/save/save.module';
+import { DatabaseConfigModule } from '../../src/config/database-config.module';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -18,7 +19,7 @@ describe('SaveService (e2e)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [SaveModule],
+      imports: [DatabaseConfigModule, SaveModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
@@ -402,12 +403,12 @@ describe('SaveService (e2e)', () => {
       const foundSave = result.find((s) => s.id === save.id);
 
       expect(foundSave).toBeDefined();
-      expect(foundSave!.users).toBeDefined();
-      expect(foundSave!.users.id).toBe(user.id);
-      expect(foundSave!.users.username).toBe(user.username);
-      expect(foundSave!.games).toBeDefined();
-      expect(foundSave!.games.id).toBe(game.id);
-      expect(foundSave!.games.title).toBe(game.title);
+      expect(foundSave?.users).toBeDefined();
+      expect(foundSave?.users.id).toBe(user.id);
+      expect(foundSave?.users.username).toBe(user.username);
+      expect(foundSave?.games).toBeDefined();
+      expect(foundSave?.games.id).toBe(game.id);
+      expect(foundSave?.games.title).toBe(game.title);
     });
   });
 
