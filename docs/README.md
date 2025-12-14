@@ -39,79 +39,92 @@
 - **Supertest** 7.1.4 — HTTP assertions для тестування API
 
 ### Інші технології
-- **Docker Compose** — для контейнеризації та запуску сервісів
+- **Docker** та **Docker Compose** — для контейнеризації та оркестрації всіх сервісів (backend, PostgreSQL, тестова БД)
 - **Swagger** — автоматична генерація документації API
 - **bcrypt** — хешування паролів
 - **class-validator** та **class-transformer** — валідація та трансформація даних
 
 ## Інструкції з налаштування
 
-### 1. Клонування репозиторію
+### Передумови
+
+- **Docker** та **Docker Compose** встановлені на вашій системі
+- Git для клонування репозиторію
+
+### Швидкий старт
+
+1. **Клонування репозиторію**
 
 ```bash
 git clone <https://github.com/inryceu/2-course-DB-CourseWork.git>
 cd <2-course-DB-CourseWork>
-npm install
 ```
 
-### 2. Запуск сервісів
+2. **Запуск всіх сервісів**
 
 ```bash
 docker-compose up -d
 ```
 
-Це запустить PostgreSQL контейнер з такими параметрами за замовчуванням:
-- Порт: 13947 (або значення з `POSTGRES_PORT`)
-- Користувач: postgres
-- База даних: railway
+Це автоматично:
+- Збудує Docker образ для backend додатку
+- Запустить PostgreSQL базу даних (основну та тестову)
+- Запустить backend додаток
+- Застосує міграції бази даних
 
-`.env` файл змінних середовища у корені проєкту:
+Застосунок буде доступний за адресою `http://localhost:3000`
+
+### Налаштування (опціонально)
+
+Якщо потрібно змінити параметри за замовчуванням, створіть `.env` файл у корені проєкту:
 
 ```env
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=your_password
-POSTGRES_DB=railway
-POSTGRES_PORT=13947
-DATABASE_URL=postgresql://postgres:your_password@localhost:13947/railway
-DATABASE_URL_TEST=postgresql://postgres:your_password@localhost:13947/railway_test
+POSTGRES_PASSWORD=steam_password
+POSTGRES_DB=steam_db
+POSTGRES_PORT=5432
+POSTGRES_TEST_DB=steam_db_test
+POSTGRES_TEST_PORT=5433
+APP_PORT=3000
 ```
 
-### 3. Встановлення залежностей
+**Параметри за замовчуванням:**
+- PostgreSQL порт: `5432` (основна БД), `5433` (тестова БД)
+- Користувач: `postgres`
+- Пароль: `steam_password`
+- База даних: `steam_db` (основна), `steam_db_test` (тестова)
+- Backend порт: `3000`
 
+**Зупинка сервісів:**
 ```bash
-cd server
-npm install
+docker-compose down
 ```
 
-### 4. Налаштування бази даних
-
+**Перезапуск сервісів:**
 ```bash
-npm run prisma:generate
-npm run prisma:migrate
+docker-compose restart
 ```
 
-## Запуск додатку
+**Перебудова та запуск:**
+```bash
+docker-compose up -d --build
+```
+
+**Виконання міграцій вручну (якщо потрібно):**
+```bash
+docker-compose exec app npx prisma migrate deploy
+```
+
+## Запуск додатку (локальна розробка)
+
+Якщо потрібно запустити додаток локально для розробки:
 
 ### Режим розробки
 
 ```bash
 cd server
+npm install
 npm run start:dev
-```
-
-Застосунок буде доступний за адресою `http://localhost:3000`
-
-### Режим продакшн
-
-```bash
-npm run build
-npm run start:prod
-```
-
-### Режим відлагодження
-
-```bash
-npm run start:debug
 ```
 
 ## Документація API
@@ -123,10 +136,13 @@ npm run start:debug
 
 ## Запуск тестів
 
+**Примітка:** Для запуску тестів потрібно мати запущені контейнери з базами даних. Переконайтесь, що `docker-compose up -d` виконано.
+
 ### Запуск всіх тестів
 
 ```bash
 cd server
+npm install
 npm test
 ```
 
@@ -139,6 +155,8 @@ npm run test:unit
 ### Запуск e2e тестів
 
 **Важливо:** Перед запуском e2e тестів переконайтесь, що `DATABASE_URL_TEST` встановлено та вказує на тестову базу даних, щоб уникнути видалення даних з продакшн бази (правила написані кров'ю, u know...).
+
+Тестова база даних автоматично запускається разом з основною через `docker-compose`.
 
 ```bash
 npm run test:e2e
@@ -194,6 +212,8 @@ project-root/
 │   ├── queries.md             # Документація запитів
 │   └── CONTRIBUTIONS.md       # Інструкції для контриб'юторів
 ├── docker-compose.yml         # Конфігурація Docker Compose
+├── Dockerfile                 # Docker образ для backend застосунку
+├── .dockerignore              # Файли, які ігноруються при збірці Docker образу
 └── package.json               # Кореневий package.json
 
 ```
