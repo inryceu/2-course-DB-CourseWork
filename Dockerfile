@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ FROM base AS builder
 
 COPY package.json package-lock.json ./
 
-RUN npm ci && npm cache clean --force
+RUN npm i && npm cache clean --force
 
 COPY prisma ./prisma
 
