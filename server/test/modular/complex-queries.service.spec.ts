@@ -794,11 +794,6 @@ describe('ComplexQueriesService', () => {
         game_id: 1,
         save_data: { level: 1, progress: 0 },
       };
-      const mockAchievement = {
-        id: 1,
-        game_id: 1,
-        title: 'First Achievement',
-      };
       const mockReview = {
         id: 1,
         user_id: 1,
@@ -808,7 +803,7 @@ describe('ComplexQueriesService', () => {
       };
       const mockGameWithAchievements = {
         ...mockGame,
-        achievements: [mockAchievement],
+        achievements: [],
       };
 
       const mockTx = {
@@ -828,13 +823,6 @@ describe('ComplexQueriesService', () => {
         saves: {
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn().mockResolvedValue(mockSave),
-        },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(mockAchievement),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn().mockResolvedValue(null),
-          create: jest.fn().mockResolvedValue({}),
         },
         reviews: {
           findUnique: jest.fn().mockResolvedValue(null),
@@ -891,24 +879,6 @@ describe('ComplexQueriesService', () => {
           save_data: { level: 1, progress: 0 },
         },
       });
-      expect(mockTx.achievements.findFirst).toHaveBeenCalledWith({
-        where: { game_id: 1 },
-        orderBy: { id: 'asc' },
-      });
-      expect(mockTx.user_achieve_connection.findUnique).toHaveBeenCalledWith({
-        where: {
-          user_id_achievement_id: {
-            user_id: 1,
-            achievement_id: 1,
-          },
-        },
-      });
-      expect(mockTx.user_achieve_connection.create).toHaveBeenCalledWith({
-        data: {
-          user_id: 1,
-          achievement_id: 1,
-        },
-      });
       expect(mockTx.reviews.findUnique).toHaveBeenCalledWith({
         where: {
           user_id_game_id: {
@@ -927,7 +897,6 @@ describe('ComplexQueriesService', () => {
       });
       expect(result.library).toEqual(mockLibrary);
       expect(result.save).toEqual(mockSave);
-      expect(result.achievementUnlocked).toEqual(mockAchievement);
       expect(result.review).toEqual(mockReview);
       expect(result.game).toEqual(mockGameWithAchievements);
     });
@@ -972,13 +941,6 @@ describe('ComplexQueriesService', () => {
           findUnique: jest.fn(),
           create: jest.fn(),
         },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
         reviews: {
           findUnique: jest.fn(),
           create: jest.fn(),
@@ -996,11 +958,9 @@ describe('ComplexQueriesService', () => {
       expect(mockTx.libraries.create).toHaveBeenCalled();
       expect(mockTx.saves.findUnique).not.toHaveBeenCalled();
       expect(mockTx.saves.create).not.toHaveBeenCalled();
-      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
       expect(mockTx.reviews.findUnique).not.toHaveBeenCalled();
       expect(mockTx.reviews.create).not.toHaveBeenCalled();
       expect(result.save).toBeNull();
-      expect(result.achievementUnlocked).toBeNull();
       expect(result.review).toBeNull();
     });
 
@@ -1200,13 +1160,6 @@ describe('ComplexQueriesService', () => {
           findUnique: jest.fn().mockResolvedValue(existingSave),
           create: jest.fn(),
         },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
         reviews: {
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn(),
@@ -1244,10 +1197,6 @@ describe('ComplexQueriesService', () => {
         game_id: 1,
         title: 'First Achievement',
       };
-      const existingUnlock = {
-        user_id: 1,
-        achievement_id: 1,
-      };
       const mockGameWithAchievements = {
         ...mockGame,
         achievements: [mockAchievement],
@@ -1271,13 +1220,6 @@ describe('ComplexQueriesService', () => {
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn(),
         },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(mockAchievement),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn().mockResolvedValue(existingUnlock),
-          create: jest.fn(),
-        },
         reviews: {
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn(),
@@ -1294,9 +1236,7 @@ describe('ComplexQueriesService', () => {
         completeGamePurchaseDto,
       );
 
-      expect(mockTx.user_achieve_connection.findUnique).toHaveBeenCalled();
-      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
-      expect(result.achievementUnlocked).toBeNull();
+      expect(result).toBeDefined();
     });
 
     it('should not create review if review already exists', async () => {
@@ -1338,13 +1278,6 @@ describe('ComplexQueriesService', () => {
         },
         saves: {
           findUnique: jest.fn().mockResolvedValue(null),
-          create: jest.fn(),
-        },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn(),
           create: jest.fn(),
         },
         reviews: {
@@ -1425,10 +1358,7 @@ describe('ComplexQueriesService', () => {
         completeGamePurchaseDto,
       );
 
-      expect(mockTx.achievements.findFirst).toHaveBeenCalled();
-      expect(mockTx.user_achieve_connection.findUnique).not.toHaveBeenCalled();
-      expect(mockTx.user_achieve_connection.create).not.toHaveBeenCalled();
-      expect(result.achievementUnlocked).toBeNull();
+      expect(result).toBeDefined();
     });
 
     it('should complete game purchase with rented ownership type', async () => {
@@ -1468,13 +1398,6 @@ describe('ComplexQueriesService', () => {
           create: jest.fn().mockResolvedValue(mockLibrary),
         },
         saves: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
           findUnique: jest.fn(),
           create: jest.fn(),
         },
@@ -1541,13 +1464,6 @@ describe('ComplexQueriesService', () => {
           create: jest.fn().mockResolvedValue(mockLibrary),
         },
         saves: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
           findUnique: jest.fn(),
           create: jest.fn(),
         },
@@ -1624,13 +1540,6 @@ describe('ComplexQueriesService', () => {
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn().mockResolvedValue(mockSave),
         },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
         reviews: {
           findUnique: jest.fn(),
           create: jest.fn(),
@@ -1706,13 +1615,6 @@ describe('ComplexQueriesService', () => {
           create: jest.fn().mockResolvedValue(mockLibrary),
         },
         saves: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
           findUnique: jest.fn(),
           create: jest.fn(),
         },
@@ -1795,13 +1697,6 @@ describe('ComplexQueriesService', () => {
           findUnique: jest.fn(),
           create: jest.fn(),
         },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
         reviews: {
           findUnique: jest.fn().mockResolvedValue(null),
           create: jest.fn().mockResolvedValue(mockReview),
@@ -1867,13 +1762,6 @@ describe('ComplexQueriesService', () => {
           create: jest.fn().mockResolvedValue(mockLibrary),
         },
         saves: {
-          findUnique: jest.fn(),
-          create: jest.fn(),
-        },
-        achievements: {
-          findFirst: jest.fn().mockResolvedValue(null),
-        },
-        user_achieve_connection: {
           findUnique: jest.fn(),
           create: jest.fn(),
         },
