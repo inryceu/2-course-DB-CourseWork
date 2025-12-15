@@ -324,32 +324,6 @@ export class ComplexQueriesService {
         }
       }
 
-      const firstAchievement = await tx.achievements.findFirst({
-        where: { game_id: dto.gameId },
-        orderBy: { id: 'asc' },
-      });
-
-      let achievementUnlock: any = null;
-      if (firstAchievement) {
-        const existingUnlock = await tx.user_achieve_connection.findUnique({
-          where: {
-            user_id_achievement_id: {
-              user_id: dto.userId,
-              achievement_id: firstAchievement.id,
-            },
-          },
-        });
-        if (!existingUnlock) {
-          await tx.user_achieve_connection.create({
-            data: {
-              user_id: dto.userId,
-              achievement_id: firstAchievement.id,
-            },
-          });
-          achievementUnlock = firstAchievement;
-        }
-      }
-
       let review: any = null;
       if (dto.initialReview) {
         const existingReview = await tx.reviews.findUnique({
@@ -375,7 +349,6 @@ export class ComplexQueriesService {
       return {
         library,
         save,
-        achievementUnlocked: achievementUnlock,
         review,
         game: await tx.games.findUnique({
           where: { id: dto.gameId },
