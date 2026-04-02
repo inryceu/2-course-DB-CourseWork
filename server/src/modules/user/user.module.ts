@@ -1,22 +1,33 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { UserController } from './user.controller';
-
-import { CreateUserUseCase } from '../../application/use-cases/reate-user.use-case';
-import { UnlockAchievementUseCase } from '../../application/use-cases/unlock-achievement.use-case';
-
+import { CreateUserCommandHandler } from '../../application/commands/create-user.handler';
+import { UnlockAchievementCommandHandler } from '../../application/commands/unlock-achievement.handler';
+import {
+  GetUserByIdQueryHandler,
+  GetUserListQueryHandler,
+} from '../../application/commands/user.query-handlers';
 import { UserFactory } from '../../domain/factories/user.factory';
-
 import { PrismaUserRepository } from '../../infrastructure/repositories/prisma-user.repository';
 import {
   IUserRepository,
   USER_REPOSITORY_TOKEN,
 } from '../../domain/repositories/user.repository.interface';
-
 import { PrismaService } from '../../../src/prisma/prisma.service';
 
+const CommandHandlers = [
+  CreateUserCommandHandler,
+  UnlockAchievementCommandHandler,
+];
+
+const QueryHandlers = [GetUserByIdQueryHandler, GetUserListQueryHandler];
+
 @Module({
+  imports: [CqrsModule],
   controllers: [UserController],
   providers: [
+    ...CommandHandlers,
+    ...QueryHandlers,
     {
       provide: USER_REPOSITORY_TOKEN,
       useClass: PrismaUserRepository,
@@ -28,12 +39,8 @@ import { PrismaService } from '../../../src/prisma/prisma.service';
       },
       inject: [USER_REPOSITORY_TOKEN],
     },
-
     PrismaService,
-
-    CreateUserUseCase,
-    UnlockAchievementUseCase,
   ],
-  exports: [CreateUserUseCase, UnlockAchievementUseCase],
+  exports: [],
 })
 export class UserModule {}

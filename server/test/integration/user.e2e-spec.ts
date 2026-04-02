@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 
 jest.setTimeout(30000);
 
-describe('UserService (e2e)', () => {
+describe('User Module (CQS - Commands and Queries)', () => {
   let app: INestApplication;
   let prismaService: PrismaService;
   let createdUserIds: number[] = [];
@@ -88,8 +88,8 @@ describe('UserService (e2e)', () => {
     await app?.close();
   });
 
-  describe('POST /users (Create)', () => {
-    it('should create a user successfully and return 201', async () => {
+  describe('POST /users (CreateUserCommand)', () => {
+    it('should create user and return only ID', async () => {
       const createUserDto = {
         username: 'testuser1',
         email: 'test1@example.com',
@@ -104,18 +104,18 @@ describe('UserService (e2e)', () => {
         .send(createUserDto)
         .expect(201);
 
-      const user = response.body;
-      createdUserIds.push(user.id);
+      expect(response.body).toHaveProperty('id');
+      expect(typeof response.body.id).toBe('number');
+      expect(response.body.username).toBeUndefined();
+      expect(response.body.email).toBeUndefined();
 
-      expect(user.id).toBeDefined();
-      expect(user.username).toBe(createUserDto.username);
-      expect(user.password_hash).toBeUndefined();
+      createdUserIds.push(response.body.id);
 
-      // Перевіряємо в реальній БД
       const dbUser = await prismaService.users.findUnique({
-        where: { id: user.id },
+        where: { id: response.body.id },
       });
       expect(dbUser).toBeDefined();
+      expect(dbUser!.username).toBe(createUserDto.username);
 
       const isPasswordValid = await bcrypt.compare(
         createUserDto.password,
@@ -133,10 +133,12 @@ describe('UserService (e2e)', () => {
         region: 'US',
       };
 
-      await request(app.getHttpServer())
+      const firstResponse = await request(app.getHttpServer())
         .post('/users')
         .send(createUserDto)
         .expect(201);
+
+      createdUserIds.push(firstResponse.body.id);
 
       const response = await request(app.getHttpServer())
         .post('/users')
@@ -162,8 +164,102 @@ describe('UserService (e2e)', () => {
     });
   });
 
-  describe('POST /users/:id/achievements/:achievementId', () => {
-    it('should unlock achievement and return 201', async () => {
+  describe('GET /users/:id (GetUserByIdQuery)', () => {
+    it('should return UserReadModel with achievementCount', async () => {
+      const user = await prismaService.users.create({
+        data: {
+          username: 'queryuser',
+          email: 'query@example.com',
+          password_hash: 'hash',
+          age: 25,
+          region: 'US',
+        },
+      });
+      createdUserIds.push(user.id);
+
+      const response = await request(app.getHttpServer())
+        .get(`/users/${user.id}`)
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        id: user.id,
+        username: 'queryuser',
+        email: 'query@example.com',
+        age: 25,
+        region: 'US',
+        achievementCount: 0,
+      });
+
+      expect(response.body.passwordHash).toBeUndefined();
+      expect(response.body.password_hash).toBeUndefined();
+    });
+
+    it('should return 404 when user not found', async () => {
+      await request(app.getHttpServer()).get('/users/99999').expect(404);
+    });
+  });
+
+  describe('GET /users (GetUserListQuery)', () => {
+    it('should return paginated list of UserListItemReadModels', async () => {
+      const user1 = await prismaService.users.create({
+        data: {
+          username: 'listuser1',
+          email: 'list1@example.com',
+          password_hash: 'hash',
+          age: 25,
+          region: 'US',
+        },
+      });
+      const user2 = await prismaService.users.create({
+        data: {
+          username: 'listuser2',
+          email: 'list2@example.com',
+          password_hash: 'hash',
+          age: 30,
+          region: 'CA',
+        },
+      });
+      createdUserIds.push(user1.id, user2.id);
+
+      const response = await request(app.getHttpServer())
+        .get('/users?page=1&limit=10')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThanOrEqual(2);
+
+      const foundUser = response.body.find((u: any) => u.id === user1.id);
+      expect(foundUser).toBeDefined();
+      expect(foundUser).toHaveProperty('username');
+      expect(foundUser).toHaveProperty('region');
+      expect(foundUser).toHaveProperty('achievementCount');
+      expect(foundUser.email).toBeUndefined();
+    });
+
+    it('should filter users by search term', async () => {
+      const user = await prismaService.users.create({
+        data: {
+          username: 'searchable',
+          email: 'searchable@example.com',
+          password_hash: 'hash',
+          age: 25,
+          region: 'US',
+        },
+      });
+      createdUserIds.push(user.id);
+
+      const response = await request(app.getHttpServer())
+        .get('/users?search=searchable')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      const found = response.body.find((u: any) => u.username === 'searchable');
+      expect(found).toBeDefined();
+    });
+  });
+
+  describe('POST /users/:id/achievements/:achievementId (UnlockAchievementCommand)', () => {
+    it('should unlock achievement and return 204', async () => {
       const userRes = await request(app.getHttpServer()).post('/users').send({
         username: 'achiever',
         email: 'achiever@example.com',
@@ -172,6 +268,7 @@ describe('UserService (e2e)', () => {
         region: 'US',
       });
       const userId = userRes.body.id;
+      createdUserIds.push(userId);
 
       const game = await prismaService.games.create({
         data: {
@@ -183,13 +280,16 @@ describe('UserService (e2e)', () => {
           system_requirements: {},
         },
       });
+      createdGameIds.push(game.id);
+
       const achievement = await prismaService.achievements.create({
         data: { game_id: game.id, title: 'Win', icon: 'icon.png' },
       });
+      createdAchievementIds.push(achievement.id);
 
       await request(app.getHttpServer())
         .post(`/users/${userId}/achievements/${achievement.id}`)
-        .expect(201);
+        .expect(204);
 
       const connection = await prismaService.user_achieve_connection.findUnique(
         {
