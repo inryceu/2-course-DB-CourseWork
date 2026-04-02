@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 export default async () => {
-  const testDbUrl = process.env.DATABASE_URL_TEST;
+  const testDbUrl = process.env.DATABASE_URL;
 
   if (!testDbUrl) {
     throw new Error(
