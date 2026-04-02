@@ -116,7 +116,7 @@ describe('SaveService (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
   });
 
   async function createTestUser(username: string) {
