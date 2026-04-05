@@ -1,14 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventBus } from '@nestjs/cqrs';
 import { CreateUserCommandHandler } from './create-user.handler';
 import { CreateUserCommand } from './create-user.command';
-import { UserFactory } from '../../../domain/factories/user.factory';
-import { USER_REPOSITORY_TOKEN } from '../../../domain/repositories/user.repository.interface';
-import { User } from '../../../domain/entities/user.entity';
-import { Username } from '../../../domain/value-objects/username.vo';
-import { Email } from '../../../domain/value-objects/email.vo';
-import { UserAge } from '../../../domain/value-objects/user-age.vo';
-import { UserAlreadyExistsError } from '../../../domain/errors/user-already-exists.error';
-import { InvalidArgumentError } from '../../../domain/errors/invalid-argument.error';
+import { UserFactory } from '../../domain/factories/user.factory';
+import { USER_REPOSITORY_TOKEN } from '../../domain/repositories/user.repository.interface';
+import { User } from '../../domain/entities/user.entity';
+import { UserAlreadyExistsError } from '../../domain/errors/user-already-exists.error';
+import { InvalidArgumentError } from '../../domain/errors/invalid-argument.error';
+import {
+  IUserRegistrationSideEffects,
+  USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
+} from '../contracts/user-registration-side-effects.interface';
+import { UserRegisteredEvent } from '../events/user-registered.event';
 
 // Fake In-Memory Repository (no database required)
 class FakeUserRepository {
@@ -78,10 +81,19 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
   let handler: CreateUserCommandHandler;
   let fakeRepo: FakeUserRepository;
   let userFactory: UserFactory;
+  let sideEffects: jest.Mocked<IUserRegistrationSideEffects>;
+  let eventBus: jest.Mocked<Pick<EventBus, 'publish'>>;
 
   beforeEach(async () => {
     fakeRepo = new FakeUserRepository();
     userFactory = new UserFactory(fakeRepo);
+    sideEffects = {
+      recordComplianceAudit: jest.fn().mockResolvedValue(undefined),
+      trackRegistrationAnalytics: jest.fn().mockResolvedValue(undefined),
+    };
+    eventBus = {
+      publish: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -93,6 +105,14 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
         {
           provide: UserFactory,
           useValue: userFactory,
+        },
+        {
+          provide: USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
+          useValue: sideEffects,
+        },
+        {
+          provide: EventBus,
+          useValue: eventBus,
         },
       ],
     }).compile();
@@ -125,6 +145,12 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
       expect(savedUser).toBeDefined();
       expect(savedUser!.username.value).toBe('testuser');
       expect(savedUser!.email.value).toBe('test@example.com');
+
+      expect(sideEffects.recordComplianceAudit).toHaveBeenCalledTimes(1);
+      expect(eventBus.publish).toHaveBeenCalledTimes(1);
+      expect(eventBus.publish).toHaveBeenCalledWith(
+        expect.any(UserRegisteredEvent),
+      );
     });
 
     it('should hash password before saving', async () => {
@@ -157,6 +183,50 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
 
       const savedUser = await fakeRepo.findById(userId);
       expect(savedUser!.avatar).toBe('https://example.com/avatar.jpg');
+    });
+  });
+
+  describe('Synchronous Side Effects', () => {
+    it('should roll back user creation when compliance audit fails', async () => {
+      sideEffects.recordComplianceAudit.mockRejectedValueOnce(
+        new Error('audit is unavailable'),
+      );
+
+      await expect(
+        handler.execute(
+          new CreateUserCommand(
+            'rollback-user',
+            'rollback@example.com',
+            'password123',
+            25,
+            'US',
+          ),
+        ),
+      ).rejects.toThrow('audit is unavailable');
+
+      expect(await fakeRepo.findById(1)).toBeNull();
+      expect(eventBus.publish).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Asynchronous Event Publication', () => {
+    it('should not block command completion on async event processing', async () => {
+      eventBus.publish.mockImplementation(
+        () => new Promise<void>(() => undefined) as any,
+      );
+
+      const userId = await handler.execute(
+        new CreateUserCommand(
+          'async-user',
+          'async@example.com',
+          'password123',
+          25,
+          'US',
+        ),
+      );
+
+      expect(userId).toBe(1);
+      expect(eventBus.publish).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -14,6 +14,11 @@ import {
   USER_REPOSITORY_TOKEN,
 } from '../../domain/repositories/user.repository.interface';
 import { PrismaService } from '../../../src/prisma/prisma.service';
+import {
+  USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
+} from '../../application/contracts/user-registration-side-effects.interface';
+import { UserRegistrationSideEffectsService } from '../user-registration-side-effects/user-registration-side-effects.service';
+import { UserRegisteredEventHandler } from '../user-registration-side-effects/user-registered.event-handler';
 
 const CommandHandlers = [
   CreateUserCommandHandler,
@@ -21,6 +26,7 @@ const CommandHandlers = [
 ];
 
 const QueryHandlers = [GetUserByIdQueryHandler, GetUserListQueryHandler];
+const EventHandlers = [UserRegisteredEventHandler];
 
 @Module({
   imports: [CqrsModule],
@@ -28,9 +34,14 @@ const QueryHandlers = [GetUserByIdQueryHandler, GetUserListQueryHandler];
   providers: [
     ...CommandHandlers,
     ...QueryHandlers,
+    ...EventHandlers,
     {
       provide: USER_REPOSITORY_TOKEN,
       useClass: PrismaUserRepository,
+    },
+    {
+      provide: USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
+      useClass: UserRegistrationSideEffectsService,
     },
     {
       provide: UserFactory,
