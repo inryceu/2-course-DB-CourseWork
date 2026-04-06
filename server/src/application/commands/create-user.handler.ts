@@ -53,7 +53,6 @@ export class CreateUserCommandHandler implements ICommandHandler<
     try {
       await this.sideEffects.recordComplianceAudit(payload);
     } catch (error) {
-      // Explicit rollback strategy for sync side effect failures.
       await this.userRepository.delete(savedUser.id!);
       throw error;
     }
