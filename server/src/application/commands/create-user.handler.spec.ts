@@ -7,10 +7,6 @@ import { USER_REPOSITORY_TOKEN } from '../../domain/repositories/user.repository
 import { User } from '../../domain/entities/user.entity';
 import { UserAlreadyExistsError } from '../../domain/errors/user-already-exists.error';
 import { InvalidArgumentError } from '../../domain/errors/invalid-argument.error';
-import {
-  IUserRegistrationSideEffects,
-  USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
-} from '../contracts/user-registration-side-effects.interface';
 import { UserRegisteredEvent } from '../events/user-registered.event';
 
 class FakeUserRepository {
@@ -75,16 +71,11 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
   let handler: CreateUserCommandHandler;
   let fakeRepo: FakeUserRepository;
   let userFactory: UserFactory;
-  let sideEffects: jest.Mocked<IUserRegistrationSideEffects>;
   let eventBus: jest.Mocked<Pick<EventBus, 'publish'>>;
 
   beforeEach(async () => {
     fakeRepo = new FakeUserRepository();
     userFactory = new UserFactory(fakeRepo);
-    sideEffects = {
-      recordComplianceAudit: jest.fn().mockResolvedValue(undefined),
-      trackRegistrationAnalytics: jest.fn().mockResolvedValue(undefined),
-    };
     eventBus = {
       publish: jest.fn(),
     };
@@ -99,10 +90,6 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
         {
           provide: UserFactory,
           useValue: userFactory,
-        },
-        {
-          provide: USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
-          useValue: sideEffects,
         },
         {
           provide: EventBus,
@@ -138,7 +125,6 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
       expect(savedUser!.username.value).toBe('testuser');
       expect(savedUser!.email.value).toBe('test@example.com');
 
-      expect(sideEffects.recordComplianceAudit).toHaveBeenCalledTimes(1);
       expect(eventBus.publish).toHaveBeenCalledTimes(1);
       expect(eventBus.publish).toHaveBeenCalledWith(
         expect.any(UserRegisteredEvent),
@@ -175,29 +161,6 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
 
       const savedUser = await fakeRepo.findById(userId);
       expect(savedUser!.avatar).toBe('https://example.com/avatar.jpg');
-    });
-  });
-
-  describe('Synchronous Side Effects', () => {
-    it('should roll back user creation when compliance audit fails', async () => {
-      sideEffects.recordComplianceAudit.mockRejectedValueOnce(
-        new Error('audit is unavailable'),
-      );
-
-      await expect(
-        handler.execute(
-          new CreateUserCommand(
-            'rollback-user',
-            'rollback@example.com',
-            'password123',
-            25,
-            'US',
-          ),
-        ),
-      ).rejects.toThrow('audit is unavailable');
-
-      expect(await fakeRepo.findById(1)).toBeNull();
-      expect(eventBus.publish).not.toHaveBeenCalled();
     });
   });
 

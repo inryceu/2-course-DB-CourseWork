@@ -8,10 +8,8 @@ import {
 import { UserFactory } from '../../domain/factories/user.factory';
 import * as bcrypt from 'bcrypt';
 import {
-  IUserRegistrationSideEffects,
-  USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
-} from '../contracts/user-registration-side-effects.interface';
-import { UserRegisteredEvent } from '../events/user-registered.event';
+  UserRegisteredIntegrationEvent,
+} from '../../contexts/core/contracts/events/user-registered.integration-event';
 
 @CommandHandler(CreateUserCommand)
 @Injectable()
@@ -23,8 +21,6 @@ export class CreateUserCommandHandler implements ICommandHandler<
     @Inject(USER_REPOSITORY_TOKEN)
     private readonly userRepository: IUserRepository,
     private readonly userFactory: UserFactory,
-    @Inject(USER_REGISTRATION_SIDE_EFFECTS_TOKEN)
-    private readonly sideEffects: IUserRegistrationSideEffects,
     private readonly eventBus: EventBus,
   ) {}
 
@@ -50,15 +46,8 @@ export class CreateUserCommandHandler implements ICommandHandler<
       occurredAt: new Date().toISOString(),
     };
 
-    try {
-      await this.sideEffects.recordComplianceAudit(payload);
-    } catch (error) {
-      await this.userRepository.delete(savedUser.id!);
-      throw error;
-    }
-
     this.eventBus.publish(
-      new UserRegisteredEvent(
+      new UserRegisteredIntegrationEvent(
         payload.userId,
         payload.username,
         payload.email,

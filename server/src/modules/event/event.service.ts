@@ -6,7 +6,6 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { ev_type } from '@prisma/client';
 
 @Injectable()
 export class EventService {
@@ -31,11 +30,11 @@ export class EventService {
         throw new BadRequestException('End date must be after start date');
       }
 
-      let prismaType: ev_type;
+      let prismaType: string;
       if (createEventDto.type === 'free weekend') {
-        prismaType = ev_type.free_weekend;
+        prismaType = 'free weekend';
       } else {
-        prismaType = createEventDto.type as ev_type;
+        prismaType = createEventDto.type;
       }
 
       const event = await tx.events.create({
@@ -194,9 +193,9 @@ export class EventService {
         updateData.end_date = new Date(updateEventDto.end_date);
       if (updateEventDto.type) {
         if (updateEventDto.type === 'free weekend') {
-          updateData.type = ev_type.free_weekend;
+          updateData.type = 'free weekend';
         } else {
-          updateData.type = updateEventDto.type as ev_type;
+          updateData.type = updateEventDto.type;
         }
       }
 
