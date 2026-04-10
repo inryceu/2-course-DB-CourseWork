@@ -9,7 +9,7 @@ import { UserFactory } from '../../domain/factories/user.factory';
 import * as bcrypt from 'bcrypt';
 import {
   UserRegisteredIntegrationEvent,
-} from '../../contexts/core/contracts/events/user-registered.integration-event';
+} from '../../contracts/events/user-registered.integration-event';
 
 @CommandHandler(CreateUserCommand)
 @Injectable()

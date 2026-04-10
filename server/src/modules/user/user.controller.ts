@@ -16,12 +16,12 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateUserDto } from './dto/create-user.dto';
-import { CreateUserCommand } from '../../application/commands/create-user.command';
-import { UnlockAchievementCommand } from '../../application/commands/unlock-achievement.command';
+import { CreateUserCommand } from '../../contexts/core/application/commands/create-user.command';
+import { UnlockAchievementCommand } from '../../contexts/core/application/commands/unlock-achievement.command';
 import {
   GetUserByIdQuery,
   GetUserListQuery,
-} from '../../application/commands/user.queries';
+} from '../../contexts/core/application/commands/user.queries';
 import {
   ApiUserController,
   ApiCreateUser,

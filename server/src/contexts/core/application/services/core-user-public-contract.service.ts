@@ -7,11 +7,11 @@ import {
   CoreUserReadDto,
   ICoreUserPublicContract,
 } from '../../contracts/api/core-user-public-contract';
-import { CreateUserCommand } from '../../../../application/commands/create-user.command';
+import { CreateUserCommand } from '../commands/create-user.command';
 import {
   GetUserByIdQuery,
   GetUserListQuery,
-} from '../../../../application/commands/user.queries';
+} from '../commands/user.queries';
 
 @Injectable()
 export class CoreUserPublicContractService implements ICoreUserPublicContract {

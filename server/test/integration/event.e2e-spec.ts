@@ -13,7 +13,7 @@ import {
   CreateEventDto,
   EvType,
 } from '../../src/modules/event/dto/create-event.dto';
-import { ev_type } from '@prisma/client';
+
 
 jest.setTimeout(30000);
 
@@ -175,7 +175,7 @@ describe('EventService (e2e)', () => {
       const event = await eventService.create(createEventDto);
       createdEventIds.push(event.id);
 
-      expect(event.type).toBe(ev_type.free_weekend);
+      expect(event.type).toBe('free_weekend');
     });
 
     it('should create an event without discount', async () => {

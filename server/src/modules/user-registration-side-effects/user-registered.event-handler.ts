@@ -1,14 +1,14 @@
 import { Inject, Logger } from '@nestjs/common';
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
-import { UserRegisteredEvent } from '../../application/events/user-registered.event';
+import { UserRegisteredIntegrationEvent } from '../../contexts/core/contracts/events/user-registered.integration-event';
 import {
   IUserRegistrationSideEffects,
   USER_REGISTRATION_SIDE_EFFECTS_TOKEN,
-} from '../../application/contracts/user-registration-side-effects.interface';
+} from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
 
-@EventsHandler(UserRegisteredEvent)
+@EventsHandler(UserRegisteredIntegrationEvent)
 export class UserRegisteredEventHandler
-  implements IEventHandler<UserRegisteredEvent>
+  implements IEventHandler<UserRegisteredIntegrationEvent>
 {
   private readonly logger = new Logger(UserRegisteredEventHandler.name);
 
@@ -17,7 +17,7 @@ export class UserRegisteredEventHandler
     private readonly sideEffects: IUserRegistrationSideEffects,
   ) {}
 
-  handle(event: UserRegisteredEvent): void {
+  handle(event: UserRegisteredIntegrationEvent): void {
     void this.sideEffects
       .trackRegistrationAnalytics({
         userId: event.userId,

@@ -1897,7 +1897,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       const result = await service.createUserWithInitialSetup(
         createUserWithInitialSetupDto,
@@ -1989,7 +1989,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       const result = await service.createUserWithInitialSetup(minimalDto);
 
@@ -2142,7 +2142,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       await expect(
         service.createUserWithInitialSetup(createUserWithInitialSetupDto),
@@ -2171,7 +2171,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       await expect(
         service.createUserWithInitialSetup(createUserWithInitialSetupDto),
@@ -2211,7 +2211,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       await expect(
         service.createUserWithInitialSetup(createUserWithInitialSetupDto),
@@ -2277,7 +2277,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       const result = await service.createUserWithInitialSetup(dtoWithOnlyGames);
 
@@ -2339,7 +2339,7 @@ describe('ComplexQueriesService', () => {
         },
       );
 
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword');
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashedPassword');
 
       const result =
         await service.createUserWithInitialSetup(dtoWithEmptyArrays);
@@ -2399,7 +2399,7 @@ describe('ComplexQueriesService', () => {
 
       const hashSpy = jest
         .spyOn(bcrypt, 'hash')
-        .mockResolvedValue('hashedPassword123');
+        .mockImplementation(async () => 'hashedPassword123');
 
       const minimalDto: CreateUserWithInitialSetupDto = {
         user: {

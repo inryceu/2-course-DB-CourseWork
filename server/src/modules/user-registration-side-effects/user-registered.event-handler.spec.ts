@@ -1,7 +1,7 @@
 import {
   IUserRegistrationSideEffects,
-} from '../../application/contracts/user-registration-side-effects.interface';
-import { UserRegisteredEvent } from '../../application/events/user-registered.event';
+} from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
+import { UserRegisteredIntegrationEvent } from '../../contexts/core/contracts/events/user-registered.integration-event';
 import { UserRegisteredEventHandler } from './user-registered.event-handler';
 
 describe('UserRegisteredEventHandler', () => {
@@ -12,7 +12,7 @@ describe('UserRegisteredEventHandler', () => {
     };
 
     const handler = new UserRegisteredEventHandler(sideEffects);
-    const event = new UserRegisteredEvent(
+    const event = new UserRegisteredIntegrationEvent(
       1,
       'user1',
       'user1@example.com',
@@ -46,7 +46,7 @@ describe('UserRegisteredEventHandler', () => {
 
     expect(() =>
       handler.handle(
-        new UserRegisteredEvent(
+        new UserRegisteredIntegrationEvent(
           2,
           'user2',
           'user2@example.com',

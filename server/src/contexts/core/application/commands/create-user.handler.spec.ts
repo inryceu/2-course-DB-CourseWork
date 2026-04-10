@@ -7,7 +7,7 @@ import { USER_REPOSITORY_TOKEN } from '../../domain/repositories/user.repository
 import { User } from '../../domain/entities/user.entity';
 import { UserAlreadyExistsError } from '../../domain/errors/user-already-exists.error';
 import { InvalidArgumentError } from '../../domain/errors/invalid-argument.error';
-import { UserRegisteredEvent } from '../events/user-registered.event';
+import { UserRegisteredIntegrationEvent } from '../../contracts/events/user-registered.integration-event';
 
 class FakeUserRepository {
   private users: User[] = [];
@@ -127,7 +127,7 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
 
       expect(eventBus.publish).toHaveBeenCalledTimes(1);
       expect(eventBus.publish).toHaveBeenCalledWith(
-        expect.any(UserRegisteredEvent),
+        expect.any(UserRegisteredIntegrationEvent),
       );
     });
 

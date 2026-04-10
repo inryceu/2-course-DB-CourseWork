@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   IUserRegistrationSideEffects,
   UserRegistrationPayload,
-} from '../../application/contracts/user-registration-side-effects.interface';
+} from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
 
 @Injectable()
 export class UserRegistrationSideEffectsService

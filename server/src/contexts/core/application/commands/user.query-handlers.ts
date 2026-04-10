@@ -2,7 +2,7 @@ import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Injectable } from '@nestjs/common';
 import { GetUserByIdQuery, GetUserListQuery } from './user.queries';
 import { UserReadModel, UserListItemReadModel } from './user-read.models';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
 import { UserNotFoundError } from '../../domain/errors/user-not-found.error';
 
 @QueryHandler(GetUserByIdQuery)
