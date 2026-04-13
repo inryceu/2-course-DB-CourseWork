@@ -9,6 +9,8 @@
   "moduleNameMapper": {
     "^src/(.*)$": "<rootDir>/../src/$1"
   },
+  "maxWorkers": 1,
+  "workerIdleMemoryLimit": "50MB",
   "setupFilesAfterEnv": ["<rootDir>/integration/setup.ts"],
   "globalSetup": "<rootDir>/integration/global-setup.ts",
   "globalTeardown": "<rootDir>/integration/global-teardown.ts"

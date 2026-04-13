@@ -13,9 +13,10 @@ import { SaveModule } from './modules/save/save.module';
 import { GameNewsModule } from './modules/game-news/game-news.module';
 import { FriendModule } from './modules/friend/friend.module';
 import { ComplexQueriesModule } from './modules/complex-queries/complex-queries.module';
-import { AnalyticalQueriesModule } from './modules/analytical-queries/analytical-queries.module';
 import { DatabaseConfigModule } from './config/database-config.module';
 import { PrismaService } from './prisma/prisma.service';
+import { CoreContextModule } from './contexts/core/core-context.module';
+import { AnalyticsContextModule } from './contexts/analytics/analytics-context.module';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { PrismaService } from './prisma/prisma.service';
     GameNewsModule,
     FriendModule,
     ComplexQueriesModule,
-    AnalyticalQueriesModule,
+    CoreContextModule,
+    AnalyticsContextModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -4,9 +4,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateEventDto } from './dto/create-event.dto';
+import { CreateEventDto, EvType } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { ev_type } from '@prisma/client';
+import { ev_type } from '../../../generated/prisma';
 
 @Injectable()
 export class EventService {
@@ -32,10 +32,10 @@ export class EventService {
       }
 
       let prismaType: ev_type;
-      if (createEventDto.type === 'free weekend') {
+      if (createEventDto.type === EvType.free_weekend) {
         prismaType = ev_type.free_weekend;
       } else {
-        prismaType = createEventDto.type as ev_type;
+        prismaType = ev_type.sale; // Default to 'sale' if not specified or if it's 'giveaway'
       }
 
       const event = await tx.events.create({
@@ -193,10 +193,10 @@ export class EventService {
       if (updateEventDto.end_date)
         updateData.end_date = new Date(updateEventDto.end_date);
       if (updateEventDto.type) {
-        if (updateEventDto.type === 'free weekend') {
-          updateData.type = ev_type.free_weekend;
+        if (updateEventDto.type === EvType.free_weekend) {
+          updateData.type = EvType.free_weekend as EvType;
         } else {
-          updateData.type = updateEventDto.type as ev_type;
+          updateData.type = updateEventDto.type;
         }
       }
 

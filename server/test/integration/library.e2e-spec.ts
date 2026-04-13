@@ -1,3 +1,7 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../../src/prisma/prisma.service';
@@ -30,26 +34,7 @@ describe('LibraryService (e2e)', () => {
     await app.init();
 
     libraryService = moduleFixture.get<LibraryService>(LibraryService);
-    prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
-    await prismaService.$executeRawUnsafe(`
-      TRUNCATE TABLE 
-        "reviews", 
-        "saves", 
-        "libraries", 
-        "game_news", 
-        "events", 
-        "devs", 
-        "game_tag_connection",
-        "game_dev_connection",
-        "user_achieve_connection",
-        "achievements",
-        "games",
-        "tags",
-        "users",
-        "friends"
-      RESTART IDENTITY CASCADE;
-    `);
+    prismaService = moduleFixture.get<PrismaService>();
   });
 
   afterEach(async () => {

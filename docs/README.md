@@ -196,6 +196,18 @@ project-root/
 │   │   │   ├── game-news/     # Модуль новин ігор
 │   │   │   ├── complex-queries/    # Складні транзакційні запити
 │   │   │   └── analytical-queries/ # Аналітичні запити
+│   │   ├── contexts/          # Bounded Contexts (Lab 5 Modular Monolith)
+│   │   │   ├── core/
+│   │   │   │   ├── domain/
+│   │   │   │   ├── application/
+│   │   │   │   └── contracts/
+│   │   │   └── analytics/
+│   │   │       ├── domain/
+│   │   │       ├── application/
+│   │   │       ├── infrastructure/
+│   │   │       ├── presentation/
+│   │   │       ├── acl/
+│   │   │       └── contracts/
 │   │   └── prisma/
 │   │       └── prisma.service.ts  # Сервіс для роботи з Prisma
 │   ├── test/                   # Тестові файли
@@ -210,6 +222,10 @@ project-root/
 │   ├── README.md              # Головна документація (цей файл)
 │   ├── schema.md              # Документація структури БД
 │   ├── queries.md             # Документація запитів
+│   ├── adr/                   # Architectural Decision Records
+│   │   └── 0001-core-analytics-bounded-contexts.md
+│   ├── analysis/              # Аналітичні документи по лабораторних
+│   │   └── lab5.md
 │   └── CONTRIBUTIONS.md       # Інструкції для контриб'юторів
 ├── docker-compose.yml         # Конфігурація Docker Compose
 ├── Dockerfile                 # Docker образ для backend застосунку
@@ -236,6 +252,15 @@ module-name/
 
 - **complex-queries**: Містить складні транзакційні операції (створення гри та гравця з усіма зв'язаними даними, покупка гри)
 - **analytical-queries**: Містить аналітичні запити для бізнес-аналітики (популярність жанрів, регіональні продажі, статистика досягнень)
+
+### Lab 5: Modular Monolith (Bounded Contexts)
+
+- **Core Context** (`server/src/contexts/core`) — transactional domain logic and public contracts.
+- **Analytics Context** (`server/src/contexts/analytics`) — read-only projections updated asynchronously from Core integration events.
+- **ACL** in Analytics maps Core event contract to Analytics internal projection model.
+- **Consistency split**:
+  - Strong consistency inside Core.
+  - Eventual consistency between Core and Analytics.
 
 ## Додаткова інформація
 
