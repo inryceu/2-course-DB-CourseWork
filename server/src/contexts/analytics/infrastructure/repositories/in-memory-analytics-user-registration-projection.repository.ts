@@ -6,10 +6,11 @@ import {
 import { AnalyticsUserRegistrationProjection } from '../../domain/models/analytics-user-registration.projection';
 
 @Injectable()
-export class InMemoryAnalyticsUserRegistrationProjectionRepository
-  implements IAnalyticsUserRegistrationProjectionRepository
-{
-  private readonly projections = new Map<number, AnalyticsUserRegistrationProjection>();
+export class InMemoryAnalyticsUserRegistrationProjectionRepository implements IAnalyticsUserRegistrationProjectionRepository {
+  private readonly projections = new Map<
+    number,
+    AnalyticsUserRegistrationProjection
+  >();
 
   async upsert(projection: AnalyticsUserRegistrationProjection): Promise<void> {
     this.projections.set(projection.userId, projection);

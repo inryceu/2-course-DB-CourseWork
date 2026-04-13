@@ -5,9 +5,7 @@ import {
 } from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
 
 @Injectable()
-export class UserRegistrationSideEffectsService
-  implements IUserRegistrationSideEffects
-{
+export class UserRegistrationSideEffectsService implements IUserRegistrationSideEffects {
   private readonly logger = new Logger(UserRegistrationSideEffectsService.name);
 
   async recordComplianceAudit(payload: UserRegistrationPayload): Promise<void> {

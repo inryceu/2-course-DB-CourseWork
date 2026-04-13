@@ -33,26 +33,27 @@ describe('GameService (e2e)', () => {
     await app.init();
 
     gameService = moduleFixture.get<GameService>(GameService);
-    prismaService = moduleFixture.get<PrismaService>(PrismaService);
+    const prismaClient = moduleFixture.get<PrismaClient>();
+    prismaService = moduleFixture.get<PrismaService>(prismaClient);
 
-    await prismaService.$executeRawUnsafe(`
-      TRUNCATE TABLE 
-        "reviews", 
-        "saves", 
-        "libraries", 
-        "game_news", 
-        "events", 
-        "devs", 
-        "game_tag_connection",
-        "game_dev_connection",
-        "user_achieve_connection",
-        "achievements",
-        "games",
-        "tags",
-        "users",
-        "friends"
-      RESTART IDENTITY CASCADE;
-    `);
+    // Use Prisma transactions instead of raw TRUNCATE to avoid PostgreSQL deadlock
+    // TRUNCATE requires exclusive locks which causes deadlocks in concurrent tests
+    await prismaService.$transaction(async (tx) => {
+      await tx.reviews.deleteMany({ where: {} });
+      await tx.saves.deleteMany({ where: {} });
+      await tx.libraries.deleteMany({ where: {} });
+      await tx.game_news.deleteMany({ where: {} });
+      await tx.events.deleteMany({ where: {} });
+      await tx.devs.deleteMany({ where: {} });
+      await tx.game_tag_connection.deleteMany({ where: {} });
+      await tx.game_dev_connection.deleteMany({ where: {} });
+      await tx.user_achieve_connection.deleteMany({ where: {} });
+      await tx.achievements.deleteMany({ where: {} });
+      await tx.games.deleteMany({ where: {} });
+      await tx.tags.deleteMany({ where: {} });
+      await tx.users.deleteMany({ where: {} });
+      await tx.friends.deleteMany({ where: {} });
+    }, { isolationLevel: 'READ_COMMITTED' });
   });
 
   afterEach(async () => {

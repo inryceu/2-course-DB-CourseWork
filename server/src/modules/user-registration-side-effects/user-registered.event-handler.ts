@@ -7,9 +7,7 @@ import {
 } from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
 
 @EventsHandler(UserRegisteredIntegrationEvent)
-export class UserRegisteredEventHandler
-  implements IEventHandler<UserRegisteredIntegrationEvent>
-{
+export class UserRegisteredEventHandler implements IEventHandler<UserRegisteredIntegrationEvent> {
   private readonly logger = new Logger(UserRegisteredEventHandler.name);
 
   constructor(

@@ -8,7 +8,9 @@ export interface AnalyticsUserRegistrationByRegionReadModel {
 
 export interface IAnalyticsUserRegistrationProjectionRepository {
   upsert(projection: AnalyticsUserRegistrationProjection): Promise<void>;
-  getRegistrationsByRegion(): Promise<AnalyticsUserRegistrationByRegionReadModel[]>;
+  getRegistrationsByRegion(): Promise<
+    AnalyticsUserRegistrationByRegionReadModel[]
+  >;
 }
 
 export const ANALYTICS_USER_REGISTRATION_PROJECTION_REPOSITORY_TOKEN = Symbol(

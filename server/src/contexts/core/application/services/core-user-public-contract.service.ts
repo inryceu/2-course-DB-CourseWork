@@ -8,10 +8,7 @@ import {
   ICoreUserPublicContract,
 } from '../../contracts/api/core-user-public-contract';
 import { CreateUserCommand } from '../commands/create-user.command';
-import {
-  GetUserByIdQuery,
-  GetUserListQuery,
-} from '../commands/user.queries';
+import { GetUserByIdQuery, GetUserListQuery } from '../commands/user.queries';
 
 @Injectable()
 export class CoreUserPublicContractService implements ICoreUserPublicContract {

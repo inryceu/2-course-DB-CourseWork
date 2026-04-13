@@ -84,7 +84,55 @@ describe('User Module (CQS - Commands and Queries)', () => {
     }
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
+    if (createdAchievementIds.length > 0) {
+      await prismaService.user_achieve_connection.deleteMany({
+        where: {
+          achievement_id: { in: createdAchievementIds },
+        },
+      });
+      await prismaService.achievements.deleteMany({
+        where: { id: { in: createdAchievementIds } },
+      });
+      createdAchievementIds = [];
+    }
+
+    if (createdUserIds.length > 0) {
+      await prismaService.user_achieve_connection.deleteMany({
+        where: {
+          user_id: { in: createdUserIds },
+        },
+      });
+      await prismaService.libraries.deleteMany({
+        where: { user_id: { in: createdUserIds } },
+      });
+      await prismaService.reviews.deleteMany({
+        where: { user_id: { in: createdUserIds } },
+      });
+      await prismaService.saves.deleteMany({
+        where: { user_id: { in: createdUserIds } },
+      });
+      await prismaService.friends.deleteMany({
+        where: {
+          OR: [
+            { user_id: { in: createdUserIds } },
+            { friend_id: { in: createdUserIds } },
+          ],
+        },
+      });
+      await prismaService.users.deleteMany({
+        where: { id: { in: createdUserIds } },
+      });
+      createdUserIds = [];
+    }
+
+    if (createdGameIds.length > 0) {
+      await prismaService.games.deleteMany({
+        where: { id: { in: createdGameIds } },
+      });
+      createdGameIds = [];
+    }
+
     await app?.close();
   });
 

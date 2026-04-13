@@ -50,7 +50,10 @@ class FakeUserRepository {
     this.persistedAchievements.set(userId, existingSet);
   }
 
-  async removeAchievement(userId: number, achievementId: number): Promise<void> {
+  async removeAchievement(
+    userId: number,
+    achievementId: number,
+  ): Promise<void> {
     const existing = await this.findById(userId);
     if (!existing) {
       throw new UserNotFoundError(`User with ID ${userId} not found`);

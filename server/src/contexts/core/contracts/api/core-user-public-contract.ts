@@ -32,7 +32,9 @@ export interface CoreUserListItemReadDto {
 }
 
 export interface ICoreUserPublicContract {
-  createUser(request: CoreCreateUserRequestDto): Promise<CoreCreateUserResponseDto>;
+  createUser(
+    request: CoreCreateUserRequestDto,
+  ): Promise<CoreCreateUserResponseDto>;
   getUserById(userId: number): Promise<CoreUserReadDto>;
   getUsers(
     page?: number,

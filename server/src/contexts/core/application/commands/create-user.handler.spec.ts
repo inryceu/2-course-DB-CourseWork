@@ -52,14 +52,12 @@ class FakeUserRepository {
     this.users = this.users.filter((u) => u.id !== id);
   }
 
-  async addAchievement(userId: number, achievementId: number): Promise<void> {
-  }
+  async addAchievement(userId: number, achievementId: number): Promise<void> {}
 
   async removeAchievement(
     userId: number,
     achievementId: number,
-  ): Promise<void> {
-  }
+  ): Promise<void> {}
 
   reset() {
     this.users = [];
@@ -143,8 +141,8 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
       await handler.execute(command);
 
       const savedUser = await fakeRepo.findById(1);
-      expect(savedUser!.passwordHash).not.toBe('password123'); 
-      expect(savedUser!.passwordHash.length).toBeGreaterThan(20); 
+      expect(savedUser!.passwordHash).not.toBe('password123');
+      expect(savedUser!.passwordHash.length).toBeGreaterThan(20);
     });
 
     it('should save user with optional avatar', async () => {
@@ -189,7 +187,7 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
     it('should throw error for invalid email format', async () => {
       const command = new CreateUserCommand(
         'testuser',
-        'invalid-email', 
+        'invalid-email',
         'password123',
         25,
         'US',
@@ -205,7 +203,7 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
         'testuser',
         'test@example.com',
         'password123',
-        0, 
+        0,
         'US',
       );
 
@@ -230,7 +228,7 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
 
     it('should throw error for invalid username (too short)', async () => {
       const command = new CreateUserCommand(
-        'ab', 
+        'ab',
         'test@example.com',
         'password123',
         25,
@@ -257,7 +255,7 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
 
       const duplicateCommand = new CreateUserCommand(
         'user2',
-        'test@example.com', 
+        'test@example.com',
         'password123',
         25,
         'US',
@@ -280,7 +278,7 @@ describe('CreateUserCommandHandler (Unit Test)', () => {
       );
 
       const duplicateCommand = new CreateUserCommand(
-        'testuser', 
+        'testuser',
         'test2@example.com',
         'password123',
         25,

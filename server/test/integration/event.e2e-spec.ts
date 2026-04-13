@@ -14,7 +14,6 @@ import {
   EvType,
 } from '../../src/modules/event/dto/create-event.dto';
 
-
 jest.setTimeout(30000);
 
 describe('EventService (e2e)', () => {
@@ -34,25 +33,6 @@ describe('EventService (e2e)', () => {
 
     eventService = moduleFixture.get<EventService>(EventService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
-    await prismaService.$executeRawUnsafe(`
-      TRUNCATE TABLE 
-        "reviews", 
-        "saves", 
-        "libraries", 
-        "game_news", 
-        "events", 
-        "devs", 
-        "game_tag_connection",
-        "game_dev_connection",
-        "user_achieve_connection",
-        "achievements",
-        "games",
-        "tags",
-        "users",
-        "friends"
-      RESTART IDENTITY CASCADE;
-    `);
   });
 
   afterEach(async () => {

@@ -37,25 +37,6 @@ describe('FriendService (e2e)', () => {
 
     friendService = moduleFixture.get<FriendService>(FriendService);
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
-    await prismaService.$executeRawUnsafe(`
-      TRUNCATE TABLE 
-        "reviews", 
-        "saves", 
-        "libraries", 
-        "game_news", 
-        "events", 
-        "devs", 
-        "game_tag_connection",
-        "game_dev_connection",
-        "user_achieve_connection",
-        "achievements",
-        "games",
-        "tags",
-        "users",
-        "friends"
-      RESTART IDENTITY CASCADE;
-    `);
   });
 
   afterEach(async () => {

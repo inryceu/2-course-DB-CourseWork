@@ -8,9 +8,7 @@ import {
 } from '../contracts/analytics-user-registration-projection.repository';
 
 @EventsHandler(UserRegisteredIntegrationEvent)
-export class UserRegisteredIntegrationEventHandler
-  implements IEventHandler<UserRegisteredIntegrationEvent>
-{
+export class UserRegisteredIntegrationEventHandler implements IEventHandler<UserRegisteredIntegrationEvent> {
   private readonly logger = new Logger(
     UserRegisteredIntegrationEventHandler.name,
   );

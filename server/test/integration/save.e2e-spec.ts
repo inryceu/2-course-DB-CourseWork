@@ -13,10 +13,70 @@ import * as bcrypt from 'bcrypt';
 
 jest.setTimeout(30000);
 
+// Teardown before each test to clean up handles
 describe('SaveService (e2e)', () => {
   let app: INestApplication;
   let saveService: SaveService;
   let prismaService: PrismaService;
+
+  beforeEach(async () => {
+    // Clean up from previous tests
+    try {
+      if (prismaService) {
+        await prismaService.$disconnect();
+        const connections = (prismaService as any)._connections;
+        if (connections && Array.isArray(connections)) {
+          for (const conn of connections) {
+            if (conn && typeof conn.unref === 'function') {
+              conn.unref();
+            }
+          }
+        }
+      }
+      if (app) {
+        await app.close();
+        const server = (app as any)._server;
+        if (server && typeof server.unref === 'function') {
+          server.unref();
+        }
+      }
+    } catch (error) {
+      console.error('Teardown error:', error);
+    }
+
+    // Clean up database from previous tests using RAW TRUNCATE to avoid PostgreSQL deadlocks
+    // Each test creates its own PrismaClient instance, and multiple clients truncating tables concurrently
+    // causes PostgreSQL deadlock because each client acquires exclusive locks on overlapping tables.
+    // Using a single raw TRUNCATE statement with search_path avoids this by acquiring only ONE lock instead of many.
+    if (createdSaveIds.length > 0 || createdUserIds.length > 0 || createdGameIds.length > 0) {
+      try {
+        await prismaService.$executeRawUnsafe(`
+          SET search_path TO kpi, public;
+          TRUNCATE TABLE
+            "reviews",
+            "saves",
+            "libraries",
+            "user_achieve_connection",
+            "friends",
+            "users",
+            "game_tag_connection",
+            "game_dev_connection",
+            "achievements",
+            "events",
+            "game_news",
+            "game_reviews",
+            "game_libraries"
+          CASCADE;
+        `);
+      } catch (error) {
+        console.error('Error cleaning up database:', error);
+      }
+    }
+
+    createdSaveIds = [];
+    createdUserIds = [];
+    createdGameIds = [];
+  });
   let createdSaveIds: number[] = [];
   let createdUserIds: number[] = [];
   let createdGameIds: number[] = [];
@@ -30,29 +90,35 @@ describe('SaveService (e2e)', () => {
     await app.init();
 
     saveService = moduleFixture.get<SaveService>(SaveService);
-    prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
-    await prismaService.$executeRawUnsafe(`
-      TRUNCATE TABLE 
-        "reviews", 
-        "saves", 
-        "libraries", 
-        "game_news", 
-        "events", 
-        "devs", 
-        "game_tag_connection",
-        "game_dev_connection",
-        "user_achieve_connection",
-        "achievements",
-        "games",
-        "tags",
-        "users",
-        "friends"
-      RESTART IDENTITY CASCADE;
-    `);
+    prismaService = moduleFixture.get<PrismaService>();
   });
 
   afterEach(async () => {
+    // Clean up handles before each test
+    try {
+      if (prismaService) {
+        await prismaService.$disconnect();
+        const connections = (prismaService as any)._connections;
+        if (connections && Array.isArray(connections)) {
+          for (const conn of connections) {
+            if (conn && typeof conn.unref === 'function') {
+              conn.unref();
+            }
+          }
+        }
+      }
+      if (app) {
+        await app.close();
+        const server = (app as any)._server;
+        if (server && typeof server.unref === 'function') {
+          server.unref();
+        }
+      }
+    } catch (error) {
+      console.error('Teardown error:', error);
+    }
+
+    // Clean up database from previous tests
     if (createdSaveIds.length > 0) {
       await prismaService.saves.deleteMany({
         where: { id: { in: createdSaveIds } },
@@ -120,7 +186,31 @@ describe('SaveService (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app?.close();
+    // Close all open handles and unref them to prevent worker from hanging
+    try {
+      if (prismaService) {
+        await prismaService.$disconnect();
+        // Unref the connection pool to allow immediate process exit
+        const connections = (prismaService as any)._connections;
+        if (connections && Array.isArray(connections)) {
+          for (const conn of connections) {
+            if (conn && typeof conn.unref === 'function') {
+              conn.unref();
+            }
+          }
+        }
+      }
+      if (app) {
+        await app.close();
+        // Unref the server to allow immediate process exit
+        const server = (app as any)._server;
+        if (server && typeof server.unref === 'function') {
+          server.unref();
+        }
+      }
+    } catch (error) {
+      console.error('Error during teardown:', error);
+    }
   });
 
   async function createTestUser(username: string) {

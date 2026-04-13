@@ -1,6 +1,4 @@
-import {
-  IUserRegistrationSideEffects,
-} from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
+import { IUserRegistrationSideEffects } from '../../contexts/core/application/contracts/user-registration-side-effects.interface';
 import { UserRegisteredIntegrationEvent } from '../../contexts/core/contracts/events/user-registered.integration-event';
 import { UserRegisteredEventHandler } from './user-registered.event-handler';
 
